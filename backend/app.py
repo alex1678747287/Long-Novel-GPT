@@ -1,30 +1,48 @@
 import json
+import os
+import sys
 import time
 
 from flask import Flask, request, Response, jsonify
-from flask_cors import CORS
 app = Flask(__name__)
-CORS(app)
 
-import sys
-import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from prompts.baseprompt import clean_txt_content, load_prompt
-
 from core.writer_utils import KeyPointMsg
-from core.draft_writer import DraftWriter
-from core.plot_writer import PlotWriter
-from core.outline_writer import OutlineWriter
 
 from setting import setting_bp
-from summary import process_novel
 from backend_utils import get_model_config_from_provider_model
 from config import MAX_NOVEL_SUMMARY_LENGTH, MAX_THREAD_NUM, ENABLE_ONLINE_DEMO
 
+from v2.api import v2_bp
+
 
 app.register_blueprint(setting_bp)
+app.register_blueprint(v2_bp)
+
+
+_API_PREFIXES = ('/v2', '/setting', '/test_model', '/write', '/summary', '/stop_stream', '/health')
+
+
+def _is_api_request():
+    return request.path.startswith(_API_PREFIXES)
+
+
+@app.before_request
+def _open_api_preflight():
+    if _is_api_request() and request.method == 'OPTIONS':
+        return Response(status=204)
+    return None
+
+
+@app.after_request
+def _public_api_headers(resp):
+    if _is_api_request():
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+        resp.headers['Access-Control-Allow-Headers'] = '*'
+    return resp
 
 # 添加配置
 BACKEND_HOST = os.environ.get('BACKEND_HOST', '0.0.0.0')
@@ -39,7 +57,7 @@ def health_check():
     }), 200
 
 
-def load_novel_writer(writer_mode, chunk_list, global_context, x_chunk_length, y_chunk_length, main_model, sub_model, max_thread_num) -> DraftWriter:
+def load_novel_writer(writer_mode, chunk_list, global_context, x_chunk_length, y_chunk_length, main_model, sub_model, max_thread_num):
     kwargs = dict(
         xy_pairs=chunk_list,
         model=get_model_config_from_provider_model(main_model),
@@ -51,49 +69,27 @@ def load_novel_writer(writer_mode, chunk_list, global_context, x_chunk_length, y
     kwargs['max_thread_num'] = max_thread_num
     match writer_mode:
         case 'draft':
+            from core.draft_writer import DraftWriter
             kwargs['global_context'] = {}
             novel_writer = DraftWriter(**kwargs)
         case 'outline':
+            from core.outline_writer import OutlineWriter
             kwargs['global_context'] = {'summary': global_context}
             novel_writer = OutlineWriter(**kwargs)
         case 'plot':
+            from core.plot_writer import PlotWriter
             kwargs['global_context'] = {'chapter': global_context}
             novel_writer = PlotWriter(**kwargs)
         case _:
             raise ValueError(f"unknown writer: {writer_mode}")
             
     return novel_writer
-
-
-
-
-
-prompt_names = dict(
-    outline = ['新建章节', '扩写章节', '润色章节'],
-    plot = ['新建剧情', '扩写剧情', '润色剧情'],
-    draft = ['新建正文', '扩写正文', '润色正文'],
-)
-
-prompt_dirname = dict(
-    outline = 'prompts/创作章节',
-    plot = 'prompts/创作剧情',
-    draft = 'prompts/创作正文',
-)
-
-
-PROMPTS = {}
-for type_name, dirname in prompt_dirname.items():
-    PROMPTS[type_name] = {'prompt_names': prompt_names[type_name]}
-    for name in prompt_names[type_name]:
-        content = clean_txt_content(load_prompt(dirname, name))
-        if content.startswith("user:\n"):
-            content = content[len("user:\n"):]
-        PROMPTS[type_name][name] = {'content': content}
-
-
 @app.route('/prompts', methods=['GET'])
 def get_prompts():
-    return jsonify(PROMPTS)
+    return jsonify({
+        'error': 'legacy prompts were removed; use /v2/prompts instead',
+        'prompts': {},
+    }), 410
 
 def get_delta_chunks(prev_chunks, curr_chunks):
     """Calculate delta between previous and current chunks"""
@@ -294,6 +290,10 @@ def process_novel_text():
             max_novel_summary_length = data['settings']['MAX_NOVEL_SUMMARY_LENGTH']
             max_thread_num = data['settings']['MAX_THREAD_NUM']
             last_yield_time = 0
+            # Legacy summary imports old prompt packages that are no longer part
+            # of the v2 customer workbench. Load it only if this legacy endpoint
+            # is called so the simplified workbench can boot without those files.
+            from summary import process_novel
             for result in process_novel(content, novel_name, main_model, sub_model, max_novel_summary_length, max_thread_num):
                 if not active_streams.get(stream_id, False):
                     # Stream was stopped by client

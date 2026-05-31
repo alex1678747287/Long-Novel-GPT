@@ -164,6 +164,99 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* API providers section */
+.api-hint {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.api-hint code {
+    background: #f4f4f4;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.api-providers {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.api-provider {
+    border: 1px solid #e3e3e3;
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: #fafafa;
+}
+
+.api-provider summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: #333;
+    user-select: none;
+    padding: 4px 0;
+}
+
+.api-provider[open] {
+    background: #fff;
+}
+
+.api-provider-body {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.api-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.api-field label {
+    font-size: 13px;
+    color: #555;
+}
+
+.api-field input {
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #333;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    transition: border-color 0.2s;
+}
+
+.api-field input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+.save-api-btn {
+    align-self: flex-end;
+    padding: 6px 14px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+.save-api-btn:hover {
+    background-color: #1976D2;
+}
+
+.save-api-btn:disabled {
+    background-color: #9E9E9E;
+    cursor: not-allowed;
+}
+
 /* Custom scrollbar styles */
 .settings-popup::-webkit-scrollbar {
     width: 8px;

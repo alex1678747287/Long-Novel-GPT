@@ -56,8 +56,9 @@ def create_progress_table(yields):
 # 创建一个控制台对象
 console = Console()
 
-model = ModelConfig(model='glm-4-plus', api_key='68225a7a158bd3674bf07edbd248d620.15paBYrpUn0o8Dvi', max_tokens=4000)
-sub_model = ModelConfig(model='glm-4-flashx', api_key='68225a7a158bd3674bf07edbd248d620.15paBYrpUn0o8Dvi', max_tokens=4000)
+api_key = os.getenv('ZHIPUAI_API_KEY', 'test-api-key')
+model = ModelConfig(model='glm-4-plus', api_key=api_key, max_tokens=4000)
+sub_model = ModelConfig(model='glm-4-flashx', api_key=api_key, max_tokens=4000)
 
 novel_text = load_text("data/斗破苍穹.txt", 100_000)
 

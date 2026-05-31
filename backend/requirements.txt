@@ -11,3 +11,4 @@ flask
 flask-cors
 numpy
 chardet
+python-docx

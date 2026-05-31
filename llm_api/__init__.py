@@ -2,7 +2,7 @@ from typing import Dict, Any, Optional, Generator
 
 from .mongodb_cache import llm_api_cache
 from .baidu_api import stream_chat_with_wenxin, wenxin_model_config
-from .doubao_api import stream_chat_with_doubao, doubao_model_config
+from .doubao_api import stream_chat_with_doubao, doubao_model_config, is_doubao_model
 from .chat_messages import ChatMessages
 from .openai_api import stream_chat_with_gpt, gpt_model_config
 from .zhipuai_api import stream_chat_with_zhipuai, zhipuai_model_config
@@ -23,7 +23,7 @@ class ModelConfig(dict):
 
         if self['model'] in wenxin_model_config:
             check_key('文心一言', ['ak', 'sk'])
-        elif self['model'] in doubao_model_config:
+        elif is_doubao_model(self['model']):
             check_key('豆包', ['api_key', 'endpoint_id'])
         elif self['model'] in zhipuai_model_config:
             check_key('智谱AI', ['api_key'])
@@ -65,7 +65,7 @@ def stream_chat(model_config: ModelConfig, messages: list, response_json=False) 
             max_tokens=model_config['max_tokens'],
             response_json=response_json
         )
-    elif model_config['model'] in doubao_model_config:  # doubao models
+    elif is_doubao_model(model_config['model']):  # doubao models (prefix match)
         result = yield from stream_chat_with_doubao(
             messages,
             model=model_config['model'],

@@ -1,7 +1,10 @@
 from llm_api import ModelConfig
 
 def get_model_config_from_provider_model(provider_model):
-    from config import API_SETTINGS
+    # Reload from disk so changes made via /setting/api on one gunicorn
+    # worker are picked up by all workers.
+    from config import API_SETTINGS, reload_user_config
+    reload_user_config()
     provider, model = provider_model.split('/', 1)
     provider_config = API_SETTINGS[provider]
     

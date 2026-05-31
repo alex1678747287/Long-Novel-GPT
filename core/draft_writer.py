@@ -1,8 +1,9 @@
 from core.writer_utils import KeyPointMsg
 from core.writer import Writer
 
-from prompts.创作正文.prompt import main as prompt_draft
 from prompts.提炼.prompt import main as prompt_summary
+
+LEGACY_PROMPTS_REMOVED = "旧版创作提示词目录已移除，请使用新版 /v2/rewrite 或 /v2/prompts。"
 
 
 class DraftWriter(Writer):
@@ -10,15 +11,7 @@ class DraftWriter(Writer):
         super().__init__(xy_pairs, global_context, model, sub_model, x_chunk_length=x_chunk_length, y_chunk_length=y_chunk_length, max_thread_num=max_thread_num)
 
     def write(self, user_prompt, pair_span=None):
-        target_chunk = self.get_chunk(pair_span=pair_span)
-        if not target_chunk.x_chunk:
-            raise Exception("需要提供剧情。")
-        if len(target_chunk.x_chunk) <= 5:
-            raise Exception("剧情不能少于5个字。")
-
-        chunks = self.get_chunks(pair_span)
-        
-        yield from self.batch_write_apply_text(chunks, prompt_draft, user_prompt)
+        raise RuntimeError(LEGACY_PROMPTS_REMOVED)
 
     def summary(self, pair_span=None):
         target_chunk = self.get_chunk(pair_span=pair_span)

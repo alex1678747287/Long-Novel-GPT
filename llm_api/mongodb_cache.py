@@ -6,12 +6,27 @@ import hashlib
 import json
 import datetime
 import random
+import os
 
 from config import ENABLE_MONOGODB, MONOGODB_DB_NAME, ENABLE_MONOGODB_CACHE, CACHE_REPLAY_SPEED, CACHE_REPLAY_MAX_DELAY
 
 from .chat_messages import ChatMessages
 from .mongodb_cost import record_api_cost, check_cost_limits
 from .mongodb_init import mongo_client as client
+
+ALLOW_PLAINTEXT_LLM_CACHE = os.getenv('ALLOW_PLAINTEXT_LLM_CACHE', 'false').lower() == 'true'
+_SECRET_KEYS = {'api_key', 'api_secret', 'sk', 'ak', 'spark_api_key', 'spark_api_secret'}
+
+
+def _redact_secrets(value):
+    if isinstance(value, dict):
+        return {
+            key: '<redacted>' if str(key).lower() in _SECRET_KEYS else _redact_secrets(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_redact_secrets(item) for item in value]
+    return value
 
 def create_cache_key(func_name: str, args: tuple, kwargs: dict) -> str:
     """创建缓存键"""
@@ -51,7 +66,7 @@ def llm_api_cache():
 
             use_cache = kwargs.pop('use_cache', True)   # pop很重要
             
-            if not ENABLE_MONOGODB_CACHE:
+            if not ENABLE_MONOGODB_CACHE or not ALLOW_PLAINTEXT_LLM_CACHE:
                 use_cache = False
 
             db = client[db_name]
@@ -109,17 +124,18 @@ def llm_api_cache():
                 # 记录API调用费用
                 record_api_cost(return_value)
                 
-                # 存储到MongoDB
-                cache_data = {
-                    'created_at':datetime.datetime.now(),
-                    'return_value': return_value,
-                    'func_name': func.__name__,
-                    'args': args,
-                    'kwargs': kwargs,
-                    'yields': yields_data,
-                    'cache_key': cache_key,
-                }
-                collection.insert_one(cache_data)
+                if ENABLE_MONOGODB_CACHE and ALLOW_PLAINTEXT_LLM_CACHE:
+                    # 存储到MongoDB。仅在显式允许明文 LLM 缓存时写入；模型密钥仍脱敏。
+                    cache_data = {
+                        'created_at':datetime.datetime.now(),
+                        'return_value': return_value,
+                        'func_name': func.__name__,
+                        'args': _redact_secrets(args),
+                        'kwargs': _redact_secrets(kwargs),
+                        'yields': yields_data,
+                        'cache_key': cache_key,
+                    }
+                    collection.insert_one(cache_data)
                 
                 return return_value
             

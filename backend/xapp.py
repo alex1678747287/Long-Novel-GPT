@@ -1,12 +1,10 @@
 from flask import Flask, request, Response, jsonify
-from flask_cors import CORS
 import json
 import time
 import random
 import os
 
 app = Flask(__name__)
-CORS(app)
 
 # 添加配置
 BACKEND_HOST = os.environ.get('BACKEND_HOST', '0.0.0.0')

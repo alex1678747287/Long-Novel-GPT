@@ -371,6 +371,10 @@ with gr.Blocks(head=enable_copy_js) as demo:
 
         current_w_name = writer['current_w']
         dirname = writer['suggestions_dirname'][current_w_name]
+        if not dirname:
+            gr.Info('旧版内置创作提示词已移除，请使用新版工作台。')
+            return gr.update(value='', visible=False)
+
         suggestion = clean_txt_content(load_prompt(dirname, choice))
         if suggestion.startswith("user:\n"):
             suggestion = suggestion[len("user:\n"):]

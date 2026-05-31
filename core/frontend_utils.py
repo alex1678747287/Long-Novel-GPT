@@ -54,9 +54,9 @@ def init_writer(idea, check_empty=True):
     )
 
     suggestions_dirname = dict(
-        outline_w = 'prompts/创作大纲',
-        chapters_w = 'prompts/创作剧情',
-        draft_w = 'prompts/创作正文',
+        outline_w = None,
+        chapters_w = None,
+        draft_w = None,
     )
 
     chunk_length = dict(
@@ -330,4 +330,3 @@ def create_text_md(writer):
     else:
         height = '600px'
     return gr.Markdown(md, height=height)
-
