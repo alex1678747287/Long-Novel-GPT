@@ -4775,7 +4775,8 @@ class V2StorageWorkflowTest(unittest.TestCase):
                 "single",
             )
 
-            with patch.object(api.registry, "get_active_model", return_value={"id": "m"}):
+            with patch.object(api.registry, "get_active_model", return_value={"id": "m"}), \
+                 patch.object(api, "_maybe_kick_analysis") as kick:
                 waiting = app.test_client().post(
                     f"/v2/novels/{novel['id']}/rewrite-jobs",
                     json={"prompt_id": "builtin:洗稿", "quality_mode": "auto"},
@@ -4786,9 +4787,10 @@ class V2StorageWorkflowTest(unittest.TestCase):
                     json={"prompt_id": "builtin:洗稿", "quality_mode": "auto"},
                 )
 
+            # 未就绪时仍 409 拦截(不允许无对照表洗稿),但现在会**自动触发**对照表生成(不再被动等待手动整理)
             self.assertEqual(waiting.status_code, 409)
-            self.assertIn("整理人物", waiting.get_json()["error"])
-            self.assertEqual(waiting.get_json()["analysis_status"], "idle")
+            self.assertTrue(waiting.get_json()["analysis_required"])
+            kick.assert_called()
             self.assertEqual(ready.status_code, 200)
             self.assertEqual(len(ready.get_json()["jobs"]), 1)
         storage.DATA_DIR = original_data_dir
@@ -4812,7 +4814,8 @@ class V2StorageWorkflowTest(unittest.TestCase):
             )
             chapter_id = novel["chapters"][0]["id"]
 
-            with patch.object(api.registry, "get_active_model", return_value={"id": "m"}):
+            with patch.object(api.registry, "get_active_model", return_value={"id": "m"}), \
+                 patch.object(api, "_maybe_kick_analysis") as kick:
                 waiting = app.test_client().post(
                     f"/v2/chapters/{chapter_id}/rewrite-jobs",
                     json={"prompt_id": "builtin:洗稿", "quality_mode": "auto"},
@@ -4824,9 +4827,58 @@ class V2StorageWorkflowTest(unittest.TestCase):
                 )
 
             self.assertEqual(waiting.status_code, 409)
-            self.assertIn("整理人物", waiting.get_json()["error"])
+            self.assertTrue(waiting.get_json()["analysis_required"])
+            kick.assert_called()  # 自动触发对照表生成
             self.assertEqual(ready.status_code, 200)
             self.assertEqual(ready.get_json()["chapter_id"], chapter_id)
+        storage.DATA_DIR = original_data_dir
+        storage.DB_PATH = original_db_path
+        storage._initialized = original_initialized
+
+    def test_analysis_staleness_detection_and_resolve(self):
+        # 对照表过期(章节内容改过)检测 + 不再用过期表洗稿;旧分析(无签名)按"不过期"对待。
+        original_data_dir = storage.DATA_DIR
+        original_db_path = storage.DB_PATH
+        original_initialized = storage._initialized
+        with tempfile.TemporaryDirectory() as tmp:
+            storage.DATA_DIR = Path(tmp)
+            storage.DB_PATH = Path(tmp) / "long_novel.db"
+            storage._initialized = False
+            novel = storage.create_novel("过期检测书", [{"title": "第1章", "summary": "", "content": "原文ABC"}], "single")
+            nid = novel["id"]; cid = novel["chapters"][0]["id"]
+            sig = api._chapter_signature(novel["chapters"])
+            # 带签名的分析 → 未改动 = 不过期
+            storage.update_novel(nid, analysis=json.dumps({"name_map": {"李": "王"}, "__chapter_signature": sig}), analysis_status="done")
+            self.assertFalse(api._analysis_is_stale(storage.get_novel(nid)))
+            self.assertEqual(api._resolve_analysis_data(nid, None).get("name_map"), {"李": "王"})
+            # 改章节内容 → 签名变 → 过期 → _resolve 返回空表(不拿陈旧对照)
+            storage.update_chapter(cid, content="原文ABC 改了很多内容追加")
+            self.assertTrue(api._analysis_is_stale(storage.get_novel(nid)))
+            self.assertEqual(api._resolve_analysis_data(nid, None), {})
+            # 旧分析(无 __chapter_signature)安全默认:不判过期、照常使用(不波及存量小说)
+            storage.update_novel(nid, analysis=json.dumps({"name_map": {"张": "周"}}), analysis_status="done")
+            self.assertFalse(api._analysis_is_stale(storage.get_novel(nid)))
+            self.assertEqual(api._resolve_analysis_data(nid, None).get("name_map"), {"张": "周"})
+        storage.DATA_DIR = original_data_dir
+        storage.DB_PATH = original_db_path
+        storage._initialized = original_initialized
+
+    def test_maybe_kick_analysis_is_reentrant(self):
+        # 防重入:已 running 且未过期时不重复起分析线程(避免并发分析风暴)。
+        original_data_dir = storage.DATA_DIR
+        original_db_path = storage.DB_PATH
+        original_initialized = storage._initialized
+        with tempfile.TemporaryDirectory() as tmp:
+            storage.DATA_DIR = Path(tmp)
+            storage.DB_PATH = Path(tmp) / "long_novel.db"
+            storage._initialized = False
+            novel = storage.create_novel("防重入书", [{"title": "第1章", "summary": "", "content": "原文"}], "single")
+            nid = novel["id"]
+            storage.update_novel(nid, analysis_status="running")
+            with patch.object(api.registry, "get_active_model", return_value={"id": "m"}), \
+                 patch.object(api.threading, "Thread") as Thread:
+                api._maybe_kick_analysis(nid)  # running 且未过期 → 跳过
+                Thread.assert_not_called()
         storage.DATA_DIR = original_data_dir
         storage.DB_PATH = original_db_path
         storage._initialized = original_initialized

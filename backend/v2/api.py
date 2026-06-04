@@ -622,6 +622,9 @@ def _resolve_analysis_data(novel_id: str | None, chapter_id: str | None) -> dict
         return {}
     if novel.get('analysis_status') != 'done':
         return {}
+    if _analysis_is_stale(novel):
+        # 章节被改过、对照表已过期:不再用旧表洗稿(否则跨章拿陈旧人名/地名)。
+        return {}
     raw = novel.get('analysis') or ''
     if not raw:
         return {}
@@ -629,7 +632,33 @@ def _resolve_analysis_data(novel_id: str | None, chapter_id: str | None) -> dict
         data = json.loads(raw)
     except Exception:
         return {}
-    return data if isinstance(data, dict) else {}
+    if isinstance(data, dict):
+        data.pop('__chapter_signature', None)
+        return data
+    return {}
+
+
+def _stored_analysis_signature(novel: dict | None) -> str:
+    raw = (novel or {}).get('analysis') or ''
+    if not raw:
+        return ''
+    try:
+        data = json.loads(raw)
+    except Exception:
+        return ''
+    return str(data.get('__chapter_signature') or '') if isinstance(data, dict) else ''
+
+
+def _analysis_is_stale(novel: dict | None) -> bool:
+    """分析对照表是否已过期(done 但章节内容/结构与分析时不一致)。
+    安全默认:旧分析没有存签名时返回 False(不把存量小说一律判过期触发重分析);
+    只有新分析(带 __chapter_signature)且签名不符才算过期。"""
+    if not novel or novel.get('analysis_status') != 'done':
+        return False
+    stored = _stored_analysis_signature(novel)
+    if not stored:
+        return False
+    return stored != _chapter_signature(novel.get('chapters') or [])
 
 
 def _analysis_protected_terms(analysis: dict | None) -> list[str]:
@@ -3654,6 +3683,10 @@ def _chapter_signature(chapters: list[dict]) -> str:
     return h.hexdigest()
 
 
+_ANALYSIS_INFLIGHT: set[str] = set()
+_ANALYSIS_INFLIGHT_LOCK = threading.Lock()
+
+
 def _run_analysis_in_bg(novel_id: str, model_cfg: dict, chapters: list[dict], signature: str) -> None:
     """Run the analyzer off the request thread so import returns quickly.
     Writes the result (or an error flag) to novels.analysis_status."""
@@ -3662,6 +3695,9 @@ def _run_analysis_in_bg(novel_id: str, model_cfg: dict, chapters: list[dict], si
         current = storage.get_novel(novel_id)
         if not current or _chapter_signature(current.get('chapters') or []) != signature:
             return
+        # 把"分析时的章节签名"随分析一起落库,供洗稿时判定对照表是否过期(章节被改过)。
+        if isinstance(result, dict):
+            result['__chapter_signature'] = signature
         storage.update_novel(
             novel_id,
             analysis=json.dumps(result, ensure_ascii=False),
@@ -3674,10 +3710,14 @@ def _run_analysis_in_bg(novel_id: str, model_cfg: dict, chapters: list[dict], si
         current = storage.get_novel(novel_id)
         if current and _chapter_signature(current.get('chapters') or []) == signature:
             storage.update_novel(novel_id, analysis_status='error')
+    finally:
+        with _ANALYSIS_INFLIGHT_LOCK:
+            _ANALYSIS_INFLIGHT.discard(novel_id)
 
 
-def _maybe_kick_analysis(novel_id: str) -> None:
-    """If a model is configured, kick off background analysis."""
+def _maybe_kick_analysis(novel_id: str, force: bool = False) -> None:
+    """If a model is configured, kick off background analysis. 防重入:已在跑(且未过期)
+    或本进程已有同书分析线程在跑时直接跳过,避免重复触发并发分析风暴。"""
     model = registry.get_active_model()
     if not model:
         # No model configured — analyzer can't run. Leave status='idle'.
@@ -3685,6 +3725,16 @@ def _maybe_kick_analysis(novel_id: str) -> None:
     novel = storage.get_novel(novel_id)
     if not novel or not novel.get('chapters'):
         return
+    # 已是 done 且未过期:无需重跑(除非显式 force)。
+    if not force and novel.get('analysis_status') == 'done' and not _analysis_is_stale(novel):
+        return
+    with _ANALYSIS_INFLIGHT_LOCK:
+        if novel_id in _ANALYSIS_INFLIGHT:
+            return
+        # 已在 running 且未过期 → 不重复 kick(过期则需重跑)。
+        if novel.get('analysis_status') == 'running' and not _analysis_is_stale(novel):
+            return
+        _ANALYSIS_INFLIGHT.add(novel_id)
     signature = _chapter_signature(novel['chapters'])
     storage.update_novel(novel_id, analysis_status='running')
     threading.Thread(
@@ -3759,7 +3809,7 @@ def reanalyze_novel(novel_id):
     novel = storage.get_novel(novel_id)
     if not novel:
         return jsonify({'error': 'novel not found'}), 404
-    _maybe_kick_analysis(novel_id)
+    _maybe_kick_analysis(novel_id, force=True)  # 手动重整理:即使已 done 也强制重跑
     return jsonify({'ok': True, 'status': 'running'})
 
 
@@ -3876,15 +3926,25 @@ def _parallel_rewrite_limit_error(novel_id: str) -> tuple[dict, int] | None:
 
 def _analysis_not_ready_error(novel: dict) -> tuple[dict, int] | None:
     status = novel.get('analysis_status') or 'idle'
-    if status == 'done':
+    stale = (status == 'done') and _analysis_is_stale(novel)
+    if status == 'done' and not stale:
         return None
-    message = '正在整理人物/世界观/情节线，完成后再开始洗稿'
-    if status == 'error':
-        message = '人物/世界观/情节线整理失败，请重新整理后再开始洗稿'
+    # 强制+自动+不可选:对照表缺失/过期/失败时自动(重新)生成,不让用户在无对照表时洗稿,
+    # 也不依赖手动点"整理"。返回 409 让前端轮询到就绪后继续。
+    _maybe_kick_analysis(novel.get('id') or '', force=stale)
+    if stale:
+        message = '章节有改动，正在重新整理人物/世界观/情节线，完成后再开始洗稿'
+        effective = 'running'
+    elif status == 'error':
+        message = '人物/世界观/情节线整理失败，正在自动重试，请稍后再开始洗稿'
+        effective = 'running'
+    else:
+        message = '正在整理人物/世界观/情节线，完成后再开始洗稿'
+        effective = 'running' if status in ('idle', 'running') else status
     return {
         'error': message,
         'analysis_required': True,
-        'analysis_status': status,
+        'analysis_status': effective,
     }, 409
 
 
