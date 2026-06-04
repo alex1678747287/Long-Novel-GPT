@@ -342,6 +342,265 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertIn("青瓷药壶", content)
         self.assertIn("羊脂玉佩", content)
 
+    def test_rewrite_messages_require_non_core_detail_replacement(self):
+        source = (
+            "系统证明白白写着，半年前的6月12号，她和江海办了离婚手续。\n"
+            "再睁眼，我倒在捡垃圾的路上。\n"
+            "清唐梅女士到2号诊室问诊，我拿着医院体检单站起来。"
+        )
+
+        messages = api._build_rewrite_messages("洗稿规则", source, task="rewrite")
+        content = messages[1]["content"]
+
+        self.assertIn("非核心细节", content)
+        self.assertIn("6月12号", content)
+        self.assertIn("2号诊室", content)
+        self.assertIn("捡垃圾", content)
+        self.assertIn("只保留它们承担的剧情功能，不保留原字面", content)
+        self.assertIn("不能写成“捡三天垃圾”", content)
+
+    def test_rewrite_messages_include_hidden_quality_failure_hint(self):
+        source = "半年前的6月12号，她去2号诊室体检。身无分文的我，倒在捡垃圾的路上。"
+
+        messages = api._build_rewrite_messages(
+            "洗稿规则",
+            source,
+            task="rewrite",
+            quality_failure_hint=(
+                "质量复查未通过：篇幅过长（严重超标）；"
+                "表层换皮不足：保留原文关键人名/物件/场所“报案、宴会厅”；"
+                "非核心细节照搬：保留原文日期/编号/场景细节“捡垃圾”"
+            ),
+        )
+        content = messages[1]["content"]
+
+        self.assertIn("【上一轮未成稿原因】", content)
+        self.assertIn("禁止在成稿中出现", content)
+        self.assertIn("上一轮篇幅过长", content)
+        self.assertIn("上一轮残留锚点", content)
+        self.assertIn("翻废品、废纸板、塑料瓶", content)
+
+    def test_rewrite_quality_flags_non_core_detail_residue(self):
+        source = (
+            "系统证明白白写着，半年前的6月12号，她和江海办了离婚手续。\n"
+            "再睁眼，我倒在捡垃圾的路上。\n"
+            "清唐梅女士到2号诊室问诊，我拿着医院体检单站起来。"
+        )
+        rewritten = (
+            "系统记录仍写着，半年前的6月12号，她和周远去办了离婚手续。\n"
+            "我捡了三年垃圾，最后死在雨夜路边。\n"
+            "护士喊清唐梅到2号诊室，我握着体检单起身。"
+        )
+
+        issues = api.score_rewrite_quality(rewritten, source)["issues"]
+
+        self.assertTrue(any("非核心细节照搬" in issue for issue in issues))
+        self.assertTrue(any("6月12号" in issue and "2号诊室" in issue for issue in issues))
+        self.assertTrue(any("捡了三年垃圾" in issue for issue in issues))
+
+    def test_rewrite_quality_flags_trash_near_synonym_death_residue(self):
+        source = (
+            "上一世，我被赶出家门。\n"
+            "身无分文的我，倒在了捡垃圾的路上。\n"
+            "再睁眼，我回到医院体检那天。"
+        )
+        rewritten = (
+            "上一世，我被周家赶出门。\n"
+            "我翻了三年的废纸板和塑料瓶，最后死在一个雨夜的路边。\n"
+            "再睁眼，我站在健康管理中心的走廊里。"
+        )
+
+        issues = api.score_rewrite_quality(rewritten, source)["issues"]
+
+        self.assertTrue(any("非核心细节照搬" in issue for issue in issues))
+        self.assertTrue(any("废纸板" in issue or "塑料瓶" in issue for issue in issues))
+
+    def test_non_core_detail_repair_replaces_user_complaint_literals(self):
+        source = (
+            "半年前的6月12号，她去2号诊室体检。\n"
+            "我倒在捡垃圾的路上。\n"
+            "他拿着离婚证，说我们已经办了离婚登记。"
+        )
+        rewritten = (
+            "她盯着6月12日的离婚登记记录，随后去了2号诊室。\n"
+            "我最后倒在垃圾堆旁边，死的时候手里还攥着一个捡来的瓶子。\n"
+            "他把离婚证拍在桌上。"
+        )
+
+        repaired = api._repair_non_core_detail_residue(rewritten, source)
+
+        self.assertNotIn("6月12", repaired)
+        self.assertNotIn("2号诊室", repaired)
+        self.assertNotIn("垃圾", repaired)
+        self.assertNotIn("离婚登记", repaired)
+        self.assertNotIn("离婚证", repaired)
+        self.assertIn("关系解除回执", repaired)
+
+    def test_non_core_detail_repair_replaces_trash_near_synonyms_without_repeat(self):
+        source = "身无分文的我，倒在了捡垃圾的路上。"
+        rewritten = (
+            "我翻了三年的废纸板和塑料瓶，最后死在雨夜路边。\n"
+            "后来我靠卖旧纸箱和空瓶撑着，又一次倒在废品站旁。"
+        )
+
+        repaired = api._repair_non_core_detail_residue(rewritten, source)
+
+        for forbidden in ("垃圾", "废品", "破烂", "废纸板", "纸板", "塑料瓶", "旧纸箱", "空瓶"):
+            self.assertNotIn(forbidden, repaired)
+        self.assertEqual(repaired.count("我在地下通道发了三天高烧"), 1)
+        self.assertEqual(repaired.count("我抱着行李在雨夜里摔下台阶"), 1)
+
+    def test_name_map_repair_replaces_old_names_with_mapped_names(self):
+        rewritten = "江海的婚礼上，王秀琴坐在轮椅里，唐楠站在门口。"
+
+        repaired = api._repair_name_map_residue(
+            rewritten,
+            {"江海": "周志远", "王秀琴": "周秀琴", "唐楠": "沈青柠"},
+        )
+
+        self.assertNotIn("江海", repaired)
+        self.assertNotIn("王秀琴", repaired)
+        self.assertNotIn("唐楠", repaired)
+        self.assertIn("周志远", repaired)
+        self.assertIn("周秀琴", repaired)
+        self.assertIn("沈青柠", repaired)
+
+    def test_rewrite_quality_flags_copied_opening_beat_sequence(self):
+        source = (
+            "系统证明白白写着，半年前的6月12号，她和江海办了离婚手续。\n"
+            "我记得那个日子。\n"
+            "周志远带着一沓文件回家，说是家属档案需要补签。\n"
+            "我当时信了他，在每张纸上写下自己的名字。\n"
+            "后来我倒在捡垃圾的路上，身无分文地死去。\n"
+            "再睁眼，我又听见医生喊我去2号诊室体检。"
+        )
+        rewritten = (
+            "电子档案上仍亮着一行登记信息，某年初春她已经和沈牧办完分开手续。\n"
+            "那一天我一直没忘。\n"
+            "丈夫拎着厚厚一包材料回来，催我说亲属资料要重新确认。\n"
+            "我没有起疑，伏在茶几边把姓名一页页签完。\n"
+            "之后我在废品巷尽头断了气，口袋里一枚硬币都没有。\n"
+            "再次醒来时，护士正叫我去化验窗口做检查。"
+        )
+
+        with patch.object(api, "_overlap_4gram", return_value=0.04), \
+             patch.object(api, "_structure_similarity", return_value=0.24), \
+             patch.object(api, "_longest_common_substring_len", return_value=8):
+            score = api.score_rewrite_quality(rewritten, source)
+
+        self.assertGreaterEqual(score["opening_beat_similarity"], 0.75)
+        self.assertTrue(any("叙述骨架照搬" in issue for issue in score["issues"]))
+        self.assertEqual(api._quality_retry_limit("balanced", score["issues"]), 1)
+
+    def test_quality_retry_temperature_for_beat_skeleton_is_high(self):
+        # 叙述骨架重排是结构性创造，需要比"结构相似"(0.74)更高的探索温度
+        self.assertEqual(
+            api._quality_retry_temperature_for(["叙述骨架照搬：开场事件功能顺序相似度 86%"]),
+            0.8,
+        )
+        # 但严重超标(加戏)时仍优先低温压缩，不被骨架分支抢走
+        self.assertEqual(
+            api._quality_retry_temperature_for([
+                "篇幅过长（严重超标）：输出达到原文 168%",
+                "叙述骨架照搬：开场事件功能顺序相似度 86%",
+            ]),
+            0.45,
+        )
+
+    def test_opening_beat_order_hint_translates_beats_to_chinese(self):
+        source = (
+            "系统证明白白写着，半年前的6月12号，她和江海办了离婚手续。\n"
+            "我记得那个日子。\n"
+            "周志远带着一沓文件回家，说是家属档案需要补签。\n"
+            "后来我倒在捡垃圾的路上，身无分文地死去。\n"
+            "再睁眼，我又听见医生喊我去2号诊室体检。"
+        )
+        hint = api._opening_beat_order_hint(source)
+        self.assertIn("→", hint)
+        self.assertTrue(any(label in hint for label in ("系统记录/档案", "日期", "文件/签字", "死亡/死法")))
+
+    def test_quality_retry_instruction_forces_beat_reshuffle(self):
+        issues = ["叙述骨架照搬：开场事件功能顺序相似度 86%，需要换切入点并重排信息释放"]
+        instruction = api._quality_retry_instruction(
+            issues,
+            source_len=1200,
+            attempt=1,
+            strategy_hint=api._quality_retry_strategy(1, issues),
+            beat_order_hint="系统记录/档案 → 日期 → 回忆/前世 → 文件/签字 → 死亡/死法",
+        )
+        self.assertIn("叙述骨架强制重排", instruction)
+        self.assertIn("出场顺序彻底打乱", instruction)
+        # 必须桥接"钩子之后正文也要按新顺序"，否则钩子一换、正文又回原顺序
+        self.assertIn("钩子之后的正文同样要按打乱后的新顺序", instruction)
+        # 把上一版照搬的节拍顺序具体喂回模型
+        self.assertIn("系统记录/档案 → 日期", instruction)
+
+    def test_quality_retry_strategy_rotates_beat_starts_by_attempt(self):
+        issues = ["叙述骨架照搬：开场事件功能顺序相似度 86%"]
+        s1 = api._quality_retry_strategy(1, issues)
+        s2 = api._quality_retry_strategy(2, issues)
+        s3 = api._quality_retry_strategy(3, issues)
+        self.assertNotEqual(s1, s2)
+        self.assertNotEqual(s2, s3)
+        self.assertNotEqual(s1, s3)
+        # 第4次回到第1种起点（轮换）
+        self.assertEqual(api._quality_retry_strategy(4, issues), s1)
+
+    def test_build_quality_retry_messages_injects_beat_order_for_skeleton_issue(self):
+        source = (
+            "系统证明白白写着，半年前的6月12号，她和江海办了离婚手续。\n"
+            "我记得那个日子。\n"
+            "周志远带着一沓文件回家，说是家属档案需要补签。\n"
+            "后来我倒在捡垃圾的路上，身无分文地死去。\n"
+            "再睁眼，我又听见医生喊我去2号诊室体检。"
+        )
+        messages = api._build_quality_retry_messages(
+            source,
+            "上一版照搬骨架的稿子",
+            ["叙述骨架照搬：开场事件功能顺序相似度 86%"],
+            source_len=len(source),
+            attempt=1,
+        )
+        content = messages[1]["content"]
+        self.assertIn("叙述骨架强制重排", content)
+        self.assertIn("上一版开场节拍顺序约为", content)
+
+    def test_customer_complaint_sample_flags_detail_structure_and_name_drift(self):
+        source = (
+            "系统证明白白写着，半年前的6月12号，她和江海办了离婚手续。\n"
+            "我记得那个日子。\n"
+            "那天，江海带回一沓文件，说是家属档案需要补签。\n"
+            "我信了他，在每张纸上写下自己的名字。\n"
+            "婆婆去世后，江海拿着离婚证把我赶出家门。\n"
+            "身无分文的我，倒在了捡垃圾的路上。\n"
+            "再睁眼，我回到医院体检的时候，护士喊清唐梅到2号诊室。"
+        )
+        bad_rewrite = (
+            "系统记录仍然写着，半年前的6月12号，她和周志远办了离婚登记。\n"
+            "我记得那一天。\n"
+            "当天，周志远拿回一沓材料，说是亲属档案要补签。\n"
+            "我没有怀疑，在每张纸上签下名字。\n"
+            "婆婆死后，周志远拿着离婚证把我赶出家门。\n"
+            "我捡了三年垃圾，最后倒在雨夜路边。\n"
+            "再睁眼，我回到医院体检中心，医生叫清唐梅到2号诊室。"
+        )
+
+        with patch.object(api, "_overlap_4gram", return_value=0.05), \
+             patch.object(api, "_structure_similarity", return_value=0.22), \
+             patch.object(api, "_longest_common_substring_len", return_value=8):
+            score = api.score_rewrite_quality(
+                bad_rewrite,
+                source,
+                name_map={"江海": "沈牧", "清唐梅": "唐栀"},
+            )
+
+        issues = score["issues"]
+        self.assertTrue(any("非核心细节照搬" in issue for issue in issues))
+        self.assertTrue(any("叙述骨架照搬" in issue for issue in issues))
+        self.assertTrue(any("人名未按对照表" in issue for issue in issues))
+        self.assertTrue(any("6月12号" in issue and "2号诊室" in issue for issue in issues))
+        self.assertTrue(any("捡了三年垃圾" in issue for issue in issues))
+
     def test_default_split_target_is_doubao_friendly(self):
         with patch.object(api.registry, "get_system_params", return_value={}):
             self.assertEqual(api._resolve_split_target(), 2200)
@@ -1332,6 +1591,18 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertIn("优先压回原文长度", strategy)
         self.assertIn("打散段落功能", strategy)
 
+    def test_quality_retry_strategy_prioritizes_length_before_surface_for_overlong_copy(self):
+        issues = [
+            "篇幅过长（严重超标）：输出达到原文 168%",
+            "表层换皮不足：保留原文关键人名/物件/场所“房产、宴会厅、报案”",
+        ]
+
+        strategy = api._quality_retry_strategy(1, issues)
+
+        self.assertIn("先压回原文长度", strategy)
+        self.assertIn("质量问题引号里的词", strategy)
+        self.assertIn("不能为了替换锚点继续扩写", strategy)
+
     def test_quality_retry_uses_tight_short_chapter_budget_for_length_overrun(self):
         model = {"id": "m", "model": "claude-opus-4-7", "max_tokens": 4096}
         source = "我推开门，看见桌上放着请柬。" * 60
@@ -1371,6 +1642,20 @@ class V2PromptWorkflowTest(unittest.TestCase):
 
         self.assertGreater(surface_budget["max_tokens"], default_budget["max_tokens"])
         self.assertLessEqual(surface_budget["max_tokens"], api.QUALITY_RETRY_MAX_TOKENS)
+
+    def test_quality_retry_gives_non_core_detail_repair_enough_output_room(self):
+        model = {"id": "m", "model": "deepseek-v4-pro", "max_tokens": 8192}
+        source = "半年前的6月12号，她去2号诊室体检。" * 220
+
+        default_budget = api._model_with_quality_retry_budget(model, source)
+        detail_budget = api._model_with_quality_retry_budget(
+            model,
+            source,
+            ["非核心细节照搬：保留原文日期/编号/场景细节“6月12号、2号诊室”"],
+        )
+
+        self.assertGreater(detail_budget["max_tokens"], default_budget["max_tokens"])
+        self.assertLessEqual(detail_budget["max_tokens"], api.QUALITY_RETRY_MAX_TOKENS)
 
     def test_failed_quality_retry_records_retry_error_without_polluting_issues(self):
         app = Flask(__name__)
@@ -1474,6 +1759,10 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertEqual(api._quality_retry_limit("auto", []), 0)
         self.assertEqual(api._quality_retry_limit("auto", ["结构相似：段落形状相似度 60%，目标 50% 以下"]), 1)
         self.assertEqual(api._quality_retry_limit("auto", ["表层换皮不足：保留原文关键人名"]), 1)
+        self.assertEqual(api._quality_retry_limit("auto", [
+            "结构相似：段落形状相似度 74%，目标 50% 以下",
+            "非核心细节照搬：保留原文日期/编号/场景细节“6月12号、2号诊室”",
+        ]), 2)
         self.assertEqual(api._quality_retry_limit("auto", ["内部重复：短语循环出现"]), 1)
         self.assertEqual(api._quality_retry_limit("auto", ["输出格式失败：缺少正文代码块"]), 1)
         self.assertEqual(api._quality_retry_limit("auto", ["篇幅过长：输出达到原文 133%，可能注水"]), 0)
@@ -1718,6 +2007,17 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertIn("称谓和辱骂词", strategy)
         self.assertIn("重排开头", strategy)
 
+    def test_quality_retry_strategy_prioritizes_non_core_detail_over_surface(self):
+        strategy = api._quality_retry_strategy(1, [
+            "表层换皮不足：保留原文关键人名/物件/场所“2号诊室”",
+            "非核心细节照搬：保留原文日期/编号/场景细节“6月12号、2号诊室、捡垃圾”",
+        ])
+
+        self.assertIn("日期、编号", strategy)
+        self.assertIn("体检地点", strategy)
+        self.assertIn("手续场景", strategy)
+        self.assertNotIn("残留锚点", strategy)
+
     def test_quality_retry_strategy_prioritizes_internal_repetition(self):
         strategy = api._quality_retry_strategy(1, [
             "篇幅过长：输出达到原文 136%，可能注水",
@@ -1741,6 +2041,40 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertIn("作废", content)
         self.assertNotIn("上一版仍然写刘桂兰骂我白眼狼。", content)
 
+    def test_quality_retry_drops_failed_draft_for_non_core_detail_repair(self):
+        messages = api._build_quality_retry_messages(
+            "半年前的6月12号，她去2号诊室体检。",
+            "上一版仍然写6月12号和2号诊室。",
+            ["非核心细节照搬：保留原文日期/编号/场景细节“6月12号、2号诊室”"],
+            20,
+            1,
+        )
+        content = messages[1]["content"]
+
+        self.assertIn("上一版因", content)
+        self.assertIn("作废", content)
+        self.assertIn("非核心细节修正", content)
+        self.assertIn("禁止把“捡垃圾”改成“捡三天垃圾/翻废品”", content)
+        self.assertNotIn("上一版仍然写6月12号和2号诊室。", content)
+
+    def test_quality_retry_for_structure_issue_requires_new_skeleton(self):
+        messages = api._build_quality_retry_messages(
+            "婚礼刚开始，我把轮椅推进宴会厅。\n上一世我死在捡垃圾路上。\n再睁眼我到了2号诊室。",
+            "上一版仍然从婚礼推轮椅写起。",
+            [
+                "表达重合过高：4-gram 重合 36%",
+                "结构相似：段落形状相似度 93%，建议压到 60% 以下",
+            ],
+            80,
+            2,
+        )
+        content = messages[1]["content"]
+
+        self.assertIn("【本轮必须换骨架】", content)
+        self.assertIn("不要输出提纲", content)
+        self.assertIn("第一段禁止使用原文第一段", content)
+        self.assertNotIn("上一版仍然从婚礼推轮椅写起。", content)
+
     def test_candidate_repair_rejects_near_copy_when_shape_still_bad(self):
         source = "刘桂兰骂我白眼狼。" * 40
         current = "孙桂芳骂我白眼狼。" * 40
@@ -1756,6 +2090,108 @@ class V2PromptWorkflowTest(unittest.TestCase):
             "overlap4": 0.07,
             "structure_similarity": 0.2,
             "issues": ["表层换皮不足：保留原文关键人名/物件/场所“白眼狼”"],
+        }
+
+        self.assertFalse(api._candidate_quality_is_better(
+            candidate_quality,
+            current_quality,
+            candidate,
+            current,
+            source,
+        ))
+
+    def test_candidate_repair_rejects_new_non_core_detail_issue(self):
+        source = "半年前的6月12号，她去2号诊室体检。" * 20
+        current = "春末那份登记记录被医生放到化验窗口旁。" * 20
+        candidate = "半年前的6月12号，她还是去了2号诊室体检。" * 20
+        current_quality = {
+            "score": 78,
+            "issues": ["篇幅过长：输出达到原文 126%，可能注水"],
+            "structure_similarity": 0.20,
+            "overlap4": 0.08,
+        }
+        candidate_quality = {
+            "score": 88,
+            "issues": ["非核心细节照搬：保留原文日期/编号/场景细节“6月12号、2号诊室”"],
+            "structure_similarity": 0.18,
+            "overlap4": 0.05,
+        }
+
+        self.assertFalse(api._candidate_quality_is_better(
+            candidate_quality,
+            current_quality,
+            candidate,
+            current,
+            source,
+        ))
+
+    def test_candidate_repair_prefers_clearing_non_core_details_over_old_score(self):
+        source = "半年前的6月12号，她去2号诊室体检，后来倒在捡垃圾的路上。" * 20
+        current = "她在6月12号去了2号诊室，我在桥洞底下捡了三天垃圾。" * 20
+        candidate = "她在3月7日去了7号窗口，我最后饿倒在路边。" * 24
+        current_quality = {
+            "score": 63,
+            "issues": ["非核心细节照搬：保留原文日期/编号/场景细节“6月12号、2号诊室、捡了三天垃圾”"],
+            "structure_similarity": 0.69,
+            "overlap4": 0.12,
+        }
+        candidate_quality = {
+            "score": 45,
+            "issues": ["篇幅过短：输出只有原文 80%，像摘要而不是洗稿"],
+            "structure_similarity": 0.71,
+            "overlap4": 0.26,
+        }
+
+        self.assertTrue(api._candidate_quality_is_better(
+            candidate_quality,
+            current_quality,
+            candidate,
+            current,
+            source,
+        ))
+
+    def test_candidate_repair_prefers_name_consistency_when_score_improves(self):
+        source = "唐楠推着王秀琴去找江海，萧柔站在旁边。" * 30
+        current = "苏晚棠推着刘淑琴去找沈慕辰，秦溪站在旁边。" * 34
+        candidate = "沈青柠推着周秀琴去找周志远，苏晓曼站在旁边。" * 25
+        current_quality = {
+            "score": 64,
+            "issues": ["人名未按对照表：原文角色“唐楠、江海、萧柔”在成稿里没有用对照表指定的新名"],
+            "structure_similarity": 0.61,
+            "overlap4": 0.13,
+        }
+        candidate_quality = {
+            "score": 77,
+            "issues": ["结构相似：段落形状相似度 75%，建议压到 60% 以下"],
+            "structure_similarity": 0.75,
+            "overlap4": 0.11,
+        }
+
+        self.assertTrue(api._candidate_quality_is_better(
+            candidate_quality,
+            current_quality,
+            candidate,
+            current,
+            source,
+        ))
+
+    def test_candidate_repair_rejects_new_opening_beat_copy_issue(self):
+        source = "系统记录显示日期。我想起旧事。丈夫递来文件。我签了字。后来死在路边。医院叫号。"
+        current = "护士站的灯闪了两下，我先听见走廊外有人争吵，才想起那份旧档案。"
+        candidate = "档案显示那天日期。我想起往事。丈夫递来材料。我签完姓名。后来断气。护士叫我检查。"
+        current_quality = {
+            "score": 78,
+            "issues": ["篇幅过长：输出达到原文 126%，可能注水"],
+            "structure_similarity": 0.24,
+            "opening_beat_similarity": 0.20,
+            "overlap4": 0.09,
+        }
+        candidate_quality = {
+            "score": 86,
+            "issues": ["叙述骨架照搬：开场事件功能顺序相似度 78%"],
+            "structure_similarity": 0.22,
+            "opening_beat_similarity": 0.78,
+            "overlap4": 0.05,
         }
 
         self.assertFalse(api._candidate_quality_is_better(
@@ -2245,6 +2681,22 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertIn("眼底闪过一丝", joined)
         self.assertIn("嘴角勾起一抹", joined)
 
+    def test_quality_score_flags_newly_added_ai_cliches(self):
+        source = "我推开婚宴厅的门，看见红毯尽头的人正在笑。" * 20
+        rewritten = "风声压过礼乐，沈晚神色复杂地看他，那笑意意味深长。" * 20
+
+        with patch.object(api, "_overlap_4gram", return_value=0.04), \
+             patch.object(api, "_structure_similarity", return_value=0.24), \
+             patch.object(api, "_longest_common_substring_len", return_value=8):
+            score = api.score_rewrite_quality(rewritten, source)
+
+        joined = "；".join(score["issues"])
+        self.assertTrue(any("AI套话" in item for item in score["issues"]))
+        self.assertTrue(("神色复杂" in joined) or ("意味深长" in joined))
+        # AI套话已降级为告警，不触发自动重洗
+        cliche_only = [item for item in score["issues"] if "AI套话" in item]
+        self.assertEqual(api._quality_retry_limit("balanced", cliche_only), 0)
+
     def test_quality_score_flags_internal_phrase_repetition(self):
         source = "我推开婚宴厅的门，看见红毯尽头的人正在笑。" * 24
         repeated = "我不能再把账本递给女儿"
@@ -2304,6 +2756,29 @@ class V2PromptWorkflowTest(unittest.TestCase):
             score = api.score_rewrite_quality(rewritten, source)
 
         self.assertFalse(any("表层换皮不足" in item for item in score["issues"]))
+
+    def test_quality_score_does_not_treat_core_plot_words_as_surface_anchors(self):
+        source = (
+            "婚礼刚开始，轮椅被推到礼台前。"
+            "新婚的两个人站在灯下，谁也没想到离婚记录会被拿出来。"
+            "所有事情都安排得很整齐。"
+        ) * 10
+        rewritten = (
+            "婚礼刚开始，轮椅被推到礼台前。"
+            "新婚的两个人站在灯下，谁也没想到离婚记录会被拿出来。"
+            "所有事情都安排得很整齐。"
+        ) * 10
+
+        with patch.object(api, "_overlap_4gram", return_value=0.04), \
+             patch.object(api, "_structure_similarity", return_value=0.22), \
+             patch.object(api, "_longest_common_substring_len", return_value=8):
+            score = api.score_rewrite_quality(rewritten, source)
+
+        surface_issues = [item for item in score["issues"] if "表层换皮不足" in item]
+        joined = "；".join(surface_issues)
+        for term in ("婚礼", "轮椅", "新婚", "离婚", "安排得"):
+            self.assertNotIn(term, joined)
+        self.assertFalse(surface_issues)
 
     def test_quality_score_ignores_analysis_keep_terms_as_surface_anchors(self):
         source = (
@@ -2453,6 +2928,51 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertTrue(any("表层换皮不足" in item for item in score["issues"]))
         self.assertIn("木屋", "；".join(score["issues"]))
 
+    def test_quality_score_does_not_treat_generic_scene_rooms_as_surface_anchors(self):
+        # 通用房间/场所词（厨房/堂屋/宴会厅/客厅）不是人名也不是独特物件，
+        # 换不换皮对去重意义有限；过去它们以"房/厅/屋/堂"结尾被当强锚点导致过度告警。
+        source = (
+            "我端着汤从厨房走到堂屋，又被叫去客厅。"
+            "婚礼当天，所有人都挤在宴会厅里看热闹。"
+        ) * 10
+        rewritten = (
+            "我端着汤从厨房走到堂屋，又被叫去客厅。"
+            "婚礼当天，所有人都挤在宴会厅里看热闹。"
+        ) * 10
+
+        with patch.object(api, "_overlap_4gram", return_value=0.04), \
+             patch.object(api, "_structure_similarity", return_value=0.22), \
+             patch.object(api, "_longest_common_substring_len", return_value=8):
+            score = api.score_rewrite_quality(rewritten, source)
+
+        surface_issues = [item for item in score["issues"] if "表层换皮不足" in item]
+        joined = "；".join(surface_issues)
+        for term in ("厨房", "堂屋", "客厅", "宴会厅"):
+            self.assertNotIn(term, joined)
+        self.assertFalse(surface_issues)
+
+    def test_quality_score_still_flags_names_alongside_generic_rooms(self):
+        # 人名没换、只把场景留成通用房间词：人名仍应被判表层换皮不足，房间词不计入。
+        source = (
+            "林婉清在厨房里数落王素芬，把账本摔在堂屋的桌上。"
+            "两个人从客厅吵到宴会厅，谁也不让谁。"
+        ) * 8
+        rewritten = (
+            "林婉清在厨房里数落王素芬，把账本摔在堂屋的桌上。"
+            "两个人从客厅吵到宴会厅，谁也不让谁。"
+        ) * 8
+
+        with patch.object(api, "_overlap_4gram", return_value=0.04), \
+             patch.object(api, "_structure_similarity", return_value=0.22), \
+             patch.object(api, "_longest_common_substring_len", return_value=8):
+            score = api.score_rewrite_quality(rewritten, source)
+
+        joined = "；".join(item for item in score["issues"] if "表层换皮不足" in item)
+        self.assertTrue(joined)  # 人名未换 → 仍报表层换皮不足
+        self.assertTrue(("林婉清" in joined) or ("王素芬" in joined))
+        for term in ("厨房", "堂屋", "客厅", "宴会厅"):
+            self.assertNotIn(term, joined)
+
     def test_quality_score_flags_synopsis_or_wrapped_intro(self):
         source = (
             "我推开琴房的门，指尖刚碰到谱架，窗外的雨声就压了下来。"
@@ -2526,7 +3046,7 @@ class V2PromptWorkflowTest(unittest.TestCase):
             "很多事情到了今天才终于有了结果。"
             "母亲把缴费单推到桌上，妹妹低着头哭，父亲问我银行卡还剩多少钱。"
             "我把离婚协议放下，第一次没有退。"
-        ) * 10
+        ) * 9
 
         with patch.object(api, "_overlap_4gram", return_value=0.04), \
              patch.object(api, "_structure_similarity", return_value=0.22), \
@@ -2535,7 +3055,8 @@ class V2PromptWorkflowTest(unittest.TestCase):
 
         self.assertIn(score["delivery_label"], {"需复查", "高风险"})
         self.assertTrue(any("开头钩子不足" in item for item in score["issues"]))
-        self.assertEqual(api._quality_retry_limit("auto", score["issues"]), 1)
+        # 开头钩子不足现已纳入重试(短剧命门),auto 模式给一次补救
+        self.assertGreaterEqual(api._quality_retry_limit("auto", score["issues"]), 1)
 
     def test_quality_score_flags_narrative_opening_that_delays_dialogue_hook(self):
         source = (
@@ -2653,6 +3174,49 @@ class V2PromptWorkflowTest(unittest.TestCase):
 
         self.assertLessEqual(score["length_ratio"], 1.30)
         self.assertFalse(any("篇幅过长" in item for item in score["issues"]))
+
+    def test_quality_score_tightened_severe_overlength_for_mid_chapter(self):
+        # R7：中章 ~124% 现在算严重超标(强制重试)，不再只是 -6 告警
+        source = "甲乙丙丁戊己庚辛壬癸" * 130   # 1300 字 (<1800)
+        rewritten = "风火雷电山河湖海星月" * 161  # 1610 字 → 约 124%
+        with patch.object(api, "_overlap_4gram", return_value=0.04), \
+             patch.object(api, "_structure_similarity", return_value=0.22), \
+             patch.object(api, "_longest_common_substring_len", return_value=8):
+            score = api.score_rewrite_quality(rewritten, source)
+        self.assertGreater(score["length_ratio"], 1.22)
+        self.assertTrue(any("严重超标" in item for item in score["issues"]))
+        self.assertGreaterEqual(api._quality_retry_limit("auto", score["issues"]), 1)
+
+    def test_opening_hook_issue_now_triggers_retry(self):
+        # R4：开头钩子不足重新纳入重试 markers(短剧命门)
+        issues = ["开头钩子不足：前200字缺少直接对白、冲突动作、危险信号或关系压迫"]
+        self.assertTrue(api._has_serious_rewrite_issue(issues))
+        self.assertTrue(api._has_customer_delivery_risk(issues))
+        self.assertEqual(api._quality_retry_limit("auto", issues), 1)
+        self.assertEqual(api._quality_retry_limit("balanced", issues), 1)
+
+    def test_collapse_name_residue_fixes_replacement_dirty_data(self):
+        # R6：清理人名替换脏数据(连续重复 / 首字粘连)
+        self.assertEqual(api._collapse_name_residue("陆大富陆大富把钱攥着", ["陆大富"]), "陆大富把钱攥着")
+        self.assertEqual(api._collapse_name_residue("让你去钱钱小八家随份子", ["钱小八"]), "让你去钱小八家随份子")
+        # 不误伤正常文本
+        self.assertEqual(api._collapse_name_residue("陆大富说他要走", ["陆大富"]), "陆大富说他要走")
+        # 经 _repair_name_map_residue 一并生效
+        repaired = api._repair_name_map_residue("旧名旧名走进屋", {"旧名": "陆大富"})
+        self.assertEqual(repaired, "陆大富走进屋")
+
+    def test_scene_fidelity_issue_flags_changed_scene_only(self):
+        # R8：换戏判 false→报跑题换戏；换皮/忠实判 true→不报；无模型→跳过
+        model = {"model": "deepseek-v4-pro", "api_key": "x", "base_url": "http://y"}
+        with patch.object(api, "one_shot", return_value='前缀{"faithful": false, "reason": "换成了另一场戏"}后缀'):
+            issue = api._scene_fidelity_issue("成稿正文" * 40, "原文正文" * 80, model)
+        self.assertIn("跑题换戏", issue)
+        with patch.object(api, "one_shot", return_value='{"faithful": true}'):
+            self.assertEqual(api._scene_fidelity_issue("成稿正文" * 40, "原文正文" * 80, model), "")
+        self.assertEqual(api._scene_fidelity_issue("成稿正文" * 40, "原文正文" * 80, None), "")
+        # LLM 异常不阻塞交付
+        with patch.object(api, "one_shot", side_effect=RuntimeError("net down")):
+            self.assertEqual(api._scene_fidelity_issue("成稿正文" * 40, "原文正文" * 80, model), "")
 
     def test_eval_zip_import_pairs_original_and_refined_materials(self):
         from backend.v2 import eval_corpus
@@ -3243,6 +3807,172 @@ class V2PromptWorkflowTest(unittest.TestCase):
             terms = api._resolve_quality_protected_terms(None, chapter_id)
 
             self.assertEqual(terms, ["九连环", "十里红妆"])
+        storage.DATA_DIR = original_data_dir
+        storage.DB_PATH = original_db_path
+        storage._initialized = original_initialized
+
+    def test_rewrite_worker_score_func_uses_name_map_from_analysis(self):
+        from backend.v2 import rewrite_worker
+
+        original_data_dir = storage.DATA_DIR
+        original_db_path = storage.DB_PATH
+        original_initialized = storage._initialized
+        with tempfile.TemporaryDirectory() as tmp:
+            storage.DATA_DIR = Path(tmp)
+            storage.DB_PATH = Path(tmp) / "long_novel.db"
+            storage._initialized = False
+            novel = storage.create_novel(
+                "测试书",
+                [{
+                    "title": "第1章",
+                    "summary": "",
+                    "content": "林轩推门。苏婉儿递来药。赵元成冷笑。林母站在门口。",
+                }],
+                "local",
+            )
+            storage.update_novel(
+                novel["id"],
+                analysis=json.dumps({
+                    "name_map": {
+                        "林轩": "陆延",
+                        "苏婉儿": "沈青柠",
+                        "赵元成": "周元成",
+                        "林母": "陆母",
+                    }
+                }, ensure_ascii=False),
+                analysis_status="done",
+            )
+            chapter_id = storage.get_novel(novel["id"])["chapters"][0]["id"]
+            source = "林轩推门。苏婉儿递来药。赵元成冷笑。林母站在门口。" * 8
+            rewritten = "程舟推门。许若宁递来药。陈峥冷笑。程母站在门口。" * 8
+            score = rewrite_worker._score_func_for_payload({
+                "novel_id": novel["id"],
+                "chapter_id": chapter_id,
+            })
+
+            quality = score(rewritten, source)
+
+            self.assertTrue(any("人名未按对照表" in issue for issue in quality["issues"]))
+        storage.DATA_DIR = original_data_dir
+        storage.DB_PATH = original_db_path
+        storage._initialized = original_initialized
+
+    def test_name_map_quality_flags_short_chapter_name_drift(self):
+        source = "林轩推开门，苏婉儿把药碗递到他面前。" * 12
+        rewritten = "程舟推开门，许若宁把药碗递到他面前。" * 12
+
+        quality = api.score_rewrite_quality(
+            rewritten,
+            source,
+            name_map={"林轩": "陆延", "苏婉儿": "沈青柠"},
+        )
+
+        self.assertTrue(any("人名未按对照表" in issue for issue in quality["issues"]))
+
+    def test_name_map_quality_allows_single_missing_name_in_short_chapter(self):
+        source = "林轩推开门，苏婉儿把药碗递到他面前。" * 12
+        rewritten = "陆延推开门，许若宁把药碗递到他面前。" * 12
+
+        quality = api.score_rewrite_quality(
+            rewritten,
+            source,
+            name_map={"林轩": "陆延", "苏婉儿": "沈青柠"},
+        )
+
+        self.assertFalse(any("人名未按对照表" in issue for issue in quality["issues"]))
+
+    def test_name_map_quality_flags_very_short_chapter_name_drift(self):
+        source = "林轩推门，苏婉儿递药。"
+        rewritten = "程舟推门，许若宁递药。"
+
+        quality = api.score_rewrite_quality(
+            rewritten,
+            source,
+            name_map={"林轩": "陆延", "苏婉儿": "沈青柠"},
+        )
+
+        self.assertTrue(any("人名未按对照表" in issue for issue in quality["issues"]))
+
+    def test_quality_score_endpoint_uses_name_map_from_analysis_context(self):
+        app = Flask(__name__)
+        app.register_blueprint(api.v2_bp)
+        original_data_dir = storage.DATA_DIR
+        original_db_path = storage.DB_PATH
+        original_initialized = storage._initialized
+        with tempfile.TemporaryDirectory() as tmp:
+            storage.DATA_DIR = Path(tmp)
+            storage.DB_PATH = Path(tmp) / "long_novel.db"
+            storage._initialized = False
+            novel = storage.create_novel(
+                "测试书",
+                [{
+                    "title": "第1章",
+                    "summary": "",
+                    "content": "林轩推门。苏婉儿递来药。赵元成冷笑。林母站在门口。",
+                }],
+                "local",
+            )
+            storage.update_novel(
+                novel["id"],
+                analysis=json.dumps({
+                    "name_map": {
+                        "林轩": "陆延",
+                        "苏婉儿": "沈青柠",
+                        "赵元成": "周元成",
+                        "林母": "陆母",
+                    }
+                }, ensure_ascii=False),
+                analysis_status="done",
+            )
+            chapter_id = storage.get_novel(novel["id"])["chapters"][0]["id"]
+
+            resp = app.test_client().post("/v2/quality/score", json={
+                "novel_id": novel["id"],
+                "chapter_id": chapter_id,
+                "source": "林轩推门。苏婉儿递来药。赵元成冷笑。林母站在门口。" * 8,
+                "rewritten": "程舟推门。许若宁递来药。陈峥冷笑。程母站在门口。" * 8,
+            })
+
+            self.assertEqual(resp.status_code, 200)
+            issues = resp.get_json()["issues"]
+            self.assertTrue(any("人名未按对照表" in issue for issue in issues))
+        storage.DATA_DIR = original_data_dir
+        storage.DB_PATH = original_db_path
+        storage._initialized = original_initialized
+
+    def test_quality_score_endpoint_merges_payload_and_analysis_keep_terms(self):
+        app = Flask(__name__)
+        app.register_blueprint(api.v2_bp)
+        original_data_dir = storage.DATA_DIR
+        original_db_path = storage.DB_PATH
+        original_initialized = storage._initialized
+        with tempfile.TemporaryDirectory() as tmp:
+            storage.DATA_DIR = Path(tmp)
+            storage.DB_PATH = Path(tmp) / "long_novel.db"
+            storage._initialized = False
+            novel = storage.create_novel(
+                "测试书",
+                [{"title": "第1章", "summary": "", "content": "许石峰拿着九连环，站在十里红妆前。"}],
+                "local",
+            )
+            storage.update_novel(
+                novel["id"],
+                analysis=json.dumps({"keep_terms": ["九连环"]}, ensure_ascii=False),
+                analysis_status="done",
+            )
+            chapter_id = storage.get_novel(novel["id"])["chapters"][0]["id"]
+
+            resp = app.test_client().post("/v2/quality/score", json={
+                "novel_id": novel["id"],
+                "chapter_id": chapter_id,
+                "protected_terms": "十里红妆",
+                "source": "许石峰拿着九连环，站在十里红妆前。" * 12,
+                "rewritten": "陆承瑾拿着九连环，站在十里红妆前。" * 12,
+            })
+
+            self.assertEqual(resp.status_code, 200)
+            issues = resp.get_json()["issues"]
+            self.assertFalse(any("九连环" in issue or "十里红妆" in issue for issue in issues))
         storage.DATA_DIR = original_data_dir
         storage.DB_PATH = original_db_path
         storage._initialized = original_initialized
@@ -4172,7 +4902,7 @@ class V2StorageWorkflowTest(unittest.TestCase):
         storage.DB_PATH = original_db_path
         storage._initialized = original_initialized
 
-    def test_rewrite_worker_segmented_job_saves_light_issues_as_reviewable_done(self):
+    def test_rewrite_worker_segmented_job_requeues_light_quality_issues(self):
         from backend.v2 import rewrite_worker
 
         original_data_dir = storage.DATA_DIR
@@ -4187,7 +4917,7 @@ class V2StorageWorkflowTest(unittest.TestCase):
                 for i in range(120)
             )
             novel = storage.create_novel(
-                "轻微待完善书",
+                "轻微质量复查书",
                 [{"title": "长章", "summary": "梗概", "content": source}],
                 "single",
             )
@@ -4234,16 +4964,18 @@ class V2StorageWorkflowTest(unittest.TestCase):
             chapter = storage.get_chapter(chapter_id)
             finished = storage.get_rewrite_job(job["id"])
 
-            self.assertTrue(result)
-            self.assertEqual(chapter["status"], "done")
-            self.assertEqual(finished["status"], "done")
-            self.assertIn("篇幅过长", chapter["quality_issues"])
-            self.assertIn("篇幅过长", finished["result_json"])
+            self.assertFalse(result)
+            self.assertEqual(chapter["status"], "queued")
+            self.assertEqual(finished["status"], "queued")
+            self.assertEqual(finished["phase"], "retry_wait")
+            self.assertEqual(finished["retry_count"], 1)
+            self.assertIn("质量复查未通过", finished["error"])
+            self.assertIn("篇幅过长", finished["error"])
         storage.DATA_DIR = original_data_dir
         storage.DB_PATH = original_db_path
         storage._initialized = original_initialized
 
-    def test_rewrite_worker_segmented_job_saves_serious_issues_after_one_retry_result(self):
+    def test_rewrite_worker_segmented_job_requeues_serious_quality_issues(self):
         from backend.v2 import rewrite_worker
 
         original_data_dir = storage.DATA_DIR
@@ -4258,7 +4990,7 @@ class V2StorageWorkflowTest(unittest.TestCase):
                 for i in range(120)
             )
             novel = storage.create_novel(
-                "严重待完善书",
+                "严重质量复查书",
                 [{"title": "长章", "summary": "梗概", "content": source}],
                 "single",
             )
@@ -4308,12 +5040,13 @@ class V2StorageWorkflowTest(unittest.TestCase):
             chapter = storage.get_chapter(chapter_id)
             finished = storage.get_rewrite_job(job["id"])
 
-            self.assertTrue(result)
+            self.assertFalse(result)
             self.assertGreater(len(calls), 1)
-            self.assertEqual(chapter["status"], "done")
-            self.assertEqual(finished["status"], "done")
-            self.assertIn("结构相似", chapter["quality_issues"])
-            self.assertNotEqual(finished["phase"], "retry_wait")
+            self.assertEqual(chapter["status"], "queued")
+            self.assertEqual(finished["status"], "queued")
+            self.assertEqual(finished["phase"], "retry_wait")
+            self.assertEqual(finished["retry_count"], 1)
+            self.assertIn("结构相似", finished["error"])
         storage.DATA_DIR = original_data_dir
         storage.DB_PATH = original_db_path
         storage._initialized = original_initialized
@@ -4534,7 +5267,7 @@ class V2StorageWorkflowTest(unittest.TestCase):
         storage.DB_PATH = original_db_path
         storage._initialized = original_initialized
 
-    def test_rewrite_worker_saves_quality_issues_as_reviewable_done_without_job_retry(self):
+    def test_rewrite_worker_requeues_quality_issues_then_saves_clean_retry(self):
         from backend.v2 import rewrite_worker
 
         self.assertEqual(rewrite_worker._max_job_auto_retries(), 4)
@@ -4572,36 +5305,64 @@ class V2StorageWorkflowTest(unittest.TestCase):
                 },
             )
 
+            calls = []
+
             def fake_run_rewrite_payload(payload, progress_cb=None):
+                calls.append(payload)
+                if len(calls) == 1:
+                    return {
+                        "done": True,
+                        "rewritten": "失败候选稿",
+                        "raw": "失败候选稿",
+                        "quality": {
+                            "score": 60,
+                            "delivery_status": "review",
+                            "overlap4": 0.03,
+                            "issues": ["表层换皮：结构相似过高"],
+                        },
+                    }
                 return {
                     "done": True,
-                    "rewritten": "失败候选稿",
-                    "raw": "失败候选稿",
+                    "rewritten": "二次完善后的合格稿",
+                    "raw": "二次完善后的合格稿",
                     "quality": {
-                        "score": 60,
-                        "delivery_status": "review",
+                        "score": 92,
+                        "delivery_status": "excellent",
                         "overlap4": 0.03,
-                        "issues": ["表层换皮：结构相似过高"],
+                        "issues": [],
                     },
                 }
 
             with patch.object(rewrite_worker, "run_rewrite_payload", side_effect=fake_run_rewrite_payload):
-                result = rewrite_worker.process_job(storage.get_rewrite_job(job["id"]))
+                first = rewrite_worker.process_job(storage.get_rewrite_job(job["id"]))
+                requeued = storage.get_rewrite_job(job["id"])
+                chapter_after_first = storage.get_chapter(chapter_id)
+                second = rewrite_worker.process_job(storage.get_rewrite_job(job["id"]))
 
-            requeued = storage.get_rewrite_job(job["id"])
+            finished = storage.get_rewrite_job(job["id"])
             chapter = storage.get_chapter(chapter_id)
 
-            self.assertTrue(result)
-            self.assertEqual(requeued["status"], "done")
-            self.assertEqual(requeued["phase"], "done")
-            self.assertEqual(requeued["retry_count"], 0)
+            self.assertFalse(first)
+            self.assertTrue(second)
+            self.assertEqual(len(calls), 2)
+            self.assertIn("quality_failure_hint", calls[1])
+            self.assertIn("质量复查未通过", calls[1]["quality_failure_hint"])
+            self.assertIn("结构相似", calls[1]["quality_failure_hint"])
+            self.assertEqual(requeued["status"], "queued")
+            self.assertEqual(requeued["phase"], "retry_wait")
+            self.assertEqual(chapter_after_first["status"], "queued")
+            self.assertIn("结构相似", requeued["error"])
+            self.assertEqual(finished["status"], "done")
             self.assertEqual(chapter["status"], "done")
-            self.assertIn("结构相似", chapter["quality_issues"])
+            self.assertEqual(chapter["rewritten"], "二次完善后的合格稿")
+            self.assertEqual(json.loads(chapter["quality_issues"]), [])
         storage.DATA_DIR = original_data_dir
         storage.DB_PATH = original_db_path
         storage._initialized = original_initialized
 
-    def test_rewrite_worker_saves_reviewable_result_even_when_job_retry_count_is_exhausted(self):
+    def test_rewrite_worker_saves_best_effort_when_quality_retry_count_is_exhausted(self):
+        # 自动重试次数耗尽后，不再回退旧稿/置空报错，而是落"当前最佳候选"为成稿，
+        # 章节拿到一份可用稿件 + 非空 quality_score（标记 best_effort 供前端提示人工复核）。
         from backend.v2 import rewrite_worker
 
         original_data_dir = storage.DATA_DIR
@@ -4655,7 +5416,362 @@ class V2StorageWorkflowTest(unittest.TestCase):
             self.assertTrue(result)
             self.assertEqual(finished["status"], "done")
             self.assertEqual(chapter["status"], "done")
-            self.assertIn("结构相似", chapter["quality_issues"])
+            self.assertEqual(chapter["rewritten"], "仍然不合格的候选稿")
+            self.assertEqual(chapter["quality_score"], 58)
+            self.assertEqual(chapter["quality_grade"], "review")
+            self.assertIn("表层换皮", "".join(json.loads(chapter["quality_issues"])))
+            persisted = json.loads(finished["result_json"])
+            self.assertTrue(persisted.get("best_effort"))
+            self.assertEqual(persisted.get("quality_issues_remaining"), ["表层换皮：结构相似过高"])
+        storage.DATA_DIR = original_data_dir
+        storage.DB_PATH = original_db_path
+        storage._initialized = original_initialized
+
+    def test_rewrite_worker_segmented_job_saves_best_effort_when_budget_exhausted(self):
+        # 长章分段：自动重试耗尽后落已合并的最佳候选，而不是回退旧稿/置空。
+        from backend.v2 import rewrite_worker
+
+        original_data_dir = storage.DATA_DIR
+        original_db_path = storage.DB_PATH
+        original_initialized = storage._initialized
+        with tempfile.TemporaryDirectory() as tmp:
+            storage.DATA_DIR = Path(tmp)
+            storage.DB_PATH = Path(tmp) / "long_novel.db"
+            storage._initialized = False
+            source = "\n\n".join(
+                f"第{i}段，王府门前的灯影压着人声，旧案证词还没摊开。"
+                for i in range(120)
+            )
+            novel = storage.create_novel(
+                "长章耗尽落最佳书",
+                [{"title": "长章", "summary": "梗概", "content": source}],
+                "single",
+            )
+            chapter_id = novel["chapters"][0]["id"]
+            job = storage.create_rewrite_job(
+                novel_id=novel["id"],
+                chapter_id=chapter_id,
+                model_id="m",
+                prompt_id="builtin:洗稿",
+                payload={
+                    "text": source,
+                    "prompt_id": "builtin:洗稿",
+                    "model_id": "m",
+                    "chapter_id": chapter_id,
+                    "novel_id": novel["id"],
+                    "quality_mode": "auto",
+                },
+            )
+            storage.update_rewrite_job(job["id"], retry_count=rewrite_worker.MAX_JOB_AUTO_RETRIES)
+
+            def fake_run_rewrite_payload(payload, progress_cb=None):
+                rewritten = "分段成稿但仍带问题。" + ("错位叙事。" * 80)
+                return {
+                    "done": True,
+                    "rewritten": rewritten,
+                    "raw": rewritten,
+                    "quality": {
+                        "score": 70,
+                        "delivery_status": "review",
+                        "overlap4": 0.12,
+                        "issues": ["结构相似：段落形状相似度 58%，目标 50% 以下"],
+                    },
+                }
+
+            final_quality = {
+                "score": 70,
+                "delivery_status": "review",
+                "overlap4": 0.12,
+                "issues": ["结构相似：段落形状相似度 58%，目标 50% 以下"],
+            }
+            with patch.object(rewrite_worker, "run_rewrite_payload", side_effect=fake_run_rewrite_payload), \
+                 patch.object(rewrite_worker.api, "score_rewrite_quality", return_value=final_quality):
+                result = rewrite_worker.process_job(storage.get_rewrite_job(job["id"]))
+
+            finished = storage.get_rewrite_job(job["id"])
+            chapter = storage.get_chapter(chapter_id)
+            self.assertTrue(result)
+            self.assertEqual(finished["status"], "done")
+            self.assertEqual(chapter["status"], "done")
+            self.assertEqual(chapter["quality_score"], 70)
+            persisted = json.loads(finished["result_json"])
+            self.assertTrue(persisted.get("best_effort"))
+            self.assertTrue(persisted.get("segmented"))
+        storage.DATA_DIR = original_data_dir
+        storage.DB_PATH = original_db_path
+        storage._initialized = original_initialized
+
+    def test_rewrite_worker_stops_and_saves_best_effort_after_wall_clock_budget(self):
+        # 即使还没耗尽重试次数，一旦超过任务级总时限，也接受当前最佳候选落库。
+        from backend.v2 import rewrite_worker
+
+        original_data_dir = storage.DATA_DIR
+        original_db_path = storage.DB_PATH
+        original_initialized = storage._initialized
+        with tempfile.TemporaryDirectory() as tmp:
+            storage.DATA_DIR = Path(tmp)
+            storage.DB_PATH = Path(tmp) / "long_novel.db"
+            storage._initialized = False
+            source = "短原文"
+            novel = storage.create_novel(
+                "超时落最佳书",
+                [{"title": "短章", "summary": "梗概", "content": source}],
+                "single",
+            )
+            chapter_id = novel["chapters"][0]["id"]
+            job = storage.create_rewrite_job(
+                novel_id=novel["id"],
+                chapter_id=chapter_id,
+                model_id="m",
+                prompt_id="builtin:洗稿",
+                payload={
+                    "text": source,
+                    "prompt_id": "builtin:洗稿",
+                    "model_id": "m",
+                    "chapter_id": chapter_id,
+                    "novel_id": novel["id"],
+                    "quality_mode": "auto",
+                },
+            )
+            # retry_count=0：未耗尽次数，靠 wall-clock 触发"接受最佳候选"
+
+            def fake_run_rewrite_payload(payload, progress_cb=None):
+                return {
+                    "done": True,
+                    "rewritten": "超时前生成的当前最佳候选",
+                    "raw": "超时前生成的当前最佳候选",
+                    "quality": {
+                        "score": 64,
+                        "delivery_status": "review",
+                        "overlap4": 0.10,
+                        "issues": ["结构相似：段落形状相似度 57%"],
+                    },
+                }
+
+            mono = iter([0.0])
+
+            def fake_monotonic():
+                try:
+                    return next(mono)
+                except StopIteration:
+                    return rewrite_worker.REWRITE_JOB_WALL_CLOCK_SECONDS + 1000.0
+
+            with patch.object(rewrite_worker, "run_rewrite_payload", side_effect=fake_run_rewrite_payload), \
+                 patch.object(rewrite_worker.time, "monotonic", side_effect=fake_monotonic):
+                result = rewrite_worker.process_job(storage.get_rewrite_job(job["id"]))
+
+            finished = storage.get_rewrite_job(job["id"])
+            chapter = storage.get_chapter(chapter_id)
+            self.assertTrue(result)
+            self.assertEqual(finished["status"], "done")
+            self.assertEqual(chapter["status"], "done")
+            self.assertEqual(chapter["rewritten"], "超时前生成的当前最佳候选")
+            self.assertEqual(chapter["quality_score"], 64)
+            self.assertTrue(json.loads(finished["result_json"]).get("best_effort"))
+        storage.DATA_DIR = original_data_dir
+        storage.DB_PATH = original_db_path
+        storage._initialized = original_initialized
+
+    def test_rewrite_worker_total_time_budget_across_requeues_saves_best_effort(self):
+        # 重试次数没耗尽，但 payload.first_started_at 显示跨 requeue 总耗时已超时限 → 落最佳候选。
+        from backend.v2 import rewrite_worker
+
+        original_data_dir = storage.DATA_DIR
+        original_db_path = storage.DB_PATH
+        original_initialized = storage._initialized
+        with tempfile.TemporaryDirectory() as tmp:
+            storage.DATA_DIR = Path(tmp)
+            storage.DB_PATH = Path(tmp) / "long_novel.db"
+            storage._initialized = False
+            source = "短原文"
+            novel = storage.create_novel(
+                "总时限落最佳书",
+                [{"title": "短章", "summary": "梗概", "content": source}],
+                "single",
+            )
+            chapter_id = novel["chapters"][0]["id"]
+            job = storage.create_rewrite_job(
+                novel_id=novel["id"],
+                chapter_id=chapter_id,
+                model_id="m",
+                prompt_id="builtin:洗稿",
+                payload={
+                    "text": source,
+                    "prompt_id": "builtin:洗稿",
+                    "model_id": "m",
+                    "chapter_id": chapter_id,
+                    "novel_id": novel["id"],
+                    "quality_mode": "auto",
+                    # 模拟此前多次 requeue：首次开始时间在很久以前 → 总耗时已超时限
+                    "first_started_at": 1.0,
+                },
+            )
+            # retry_count 仍为 0（未耗尽次数），纯靠总时限触发落最佳
+
+            def fake_run_rewrite_payload(payload, progress_cb=None):
+                return {
+                    "done": True,
+                    "rewritten": "总时限到点前的当前最佳候选",
+                    "raw": "总时限到点前的当前最佳候选",
+                    "quality": {"score": 66, "delivery_status": "review", "overlap4": 0.1,
+                                 "issues": ["结构相似：段落形状相似度 56%"]},
+                }
+
+            with patch.object(rewrite_worker, "run_rewrite_payload", side_effect=fake_run_rewrite_payload):
+                result = rewrite_worker.process_job(storage.get_rewrite_job(job["id"]))
+
+            finished = storage.get_rewrite_job(job["id"])
+            chapter = storage.get_chapter(chapter_id)
+            self.assertTrue(result)
+            self.assertEqual(finished["status"], "done")
+            self.assertEqual(chapter["rewritten"], "总时限到点前的当前最佳候选")
+            self.assertEqual(chapter["quality_score"], 66)
+            self.assertTrue(json.loads(finished["result_json"]).get("best_effort"))
+        storage.DATA_DIR = original_data_dir
+        storage.DB_PATH = original_db_path
+        storage._initialized = original_initialized
+
+    def test_segment_params_follow_model_rewrite_limit(self):
+        # DeepSeek 单段上限被 codex 压到 1600；worker 必须据此分段，否则段超限被 /v2/rewrite 413。
+        from backend.v2 import rewrite_worker
+
+        payload = {"text": "甲" * 1800, "model_id": "deepseek", "task_type": "rewrite"}
+        with patch.object(rewrite_worker.api, "_resolve_rewrite_target", return_value=1600):
+            self.assertEqual(rewrite_worker._segment_threshold_for(payload), 1600)
+            self.assertEqual(rewrite_worker._segment_target_for(payload), 1400)
+            self.assertTrue(rewrite_worker._should_segment_payload(payload))  # 1800 > 1600
+        # 默认 2200 上限的模型（含测试模型）行为完全不变
+        with patch.object(rewrite_worker.api, "_resolve_rewrite_target", return_value=2200):
+            self.assertEqual(rewrite_worker._segment_threshold_for(payload), 2200)
+            self.assertEqual(rewrite_worker._segment_target_for(payload), 2200)
+            self.assertFalse(rewrite_worker._should_segment_payload(payload))  # 1800 < 2200
+
+    def test_rewrite_worker_segments_within_deepseek_limit(self):
+        # 回归婚礼难例：长章在 DeepSeek 1600 上限下，发往 /v2/rewrite 的每段都 ≤1600，不再被 413。
+        from backend.v2 import rewrite_worker
+
+        original_data_dir = storage.DATA_DIR
+        original_db_path = storage.DB_PATH
+        original_initialized = storage._initialized
+        with tempfile.TemporaryDirectory() as tmp:
+            storage.DATA_DIR = Path(tmp)
+            storage.DB_PATH = Path(tmp) / "long_novel.db"
+            storage._initialized = False
+            source = "\n\n".join(
+                f"第{i}段，婚礼当天我把轮椅推进宴会厅，所有人都看着我冷笑。"
+                for i in range(100)
+            )
+            self.assertGreater(len(source), 1600)
+            novel = storage.create_novel(
+                "DeepSeek分段上限书",
+                [{"title": "长章", "summary": "梗概", "content": source}],
+                "single",
+            )
+            chapter_id = novel["chapters"][0]["id"]
+            job = storage.create_rewrite_job(
+                novel_id=novel["id"],
+                chapter_id=chapter_id,
+                model_id="deepseek",
+                prompt_id="builtin:洗稿",
+                payload={
+                    "text": source,
+                    "prompt_id": "builtin:洗稿",
+                    "model_id": "deepseek",
+                    "chapter_id": chapter_id,
+                    "novel_id": novel["id"],
+                    "quality_mode": "auto",
+                },
+            )
+            seg_lengths = []
+
+            def fake_run_rewrite_payload(payload, progress_cb=None):
+                seg_lengths.append(len(payload.get("text") or ""))
+                rewritten = "重排后的合格分段。" + ("画面对白推进。" * 20)
+                return {
+                    "done": True,
+                    "rewritten": rewritten,
+                    "raw": rewritten,
+                    "quality": {"score": 90, "delivery_status": "excellent", "overlap4": 0.04, "issues": []},
+                }
+
+            clean_quality = {"score": 90, "delivery_status": "excellent", "overlap4": 0.04, "issues": []}
+            with patch.object(rewrite_worker.api, "_resolve_rewrite_target", return_value=1600), \
+                 patch.object(rewrite_worker, "run_rewrite_payload", side_effect=fake_run_rewrite_payload), \
+                 patch.object(rewrite_worker.api, "score_rewrite_quality", return_value=clean_quality):
+                result = rewrite_worker.process_job(storage.get_rewrite_job(job["id"]))
+
+            self.assertTrue(result)
+            self.assertGreater(len(seg_lengths), 1)  # 确实分了段
+            self.assertTrue(all(n <= 1600 for n in seg_lengths))  # 每段都不超 DeepSeek 上限
+            chapter = storage.get_chapter(chapter_id)
+            self.assertEqual(chapter["status"], "done")
+        storage.DATA_DIR = original_data_dir
+        storage.DB_PATH = original_db_path
+        storage._initialized = original_initialized
+
+    def test_rewrite_worker_scene_fidelity_retries_changed_scene_when_enabled(self):
+        # R8：开启忠实度门后，一个"质量门干净但换了戏"的候选会被打回重试(不直接落库)。
+        from backend.v2 import rewrite_worker
+
+        original_data_dir = storage.DATA_DIR
+        original_db_path = storage.DB_PATH
+        original_initialized = storage._initialized
+        with tempfile.TemporaryDirectory() as tmp:
+            storage.DATA_DIR = Path(tmp)
+            storage.DB_PATH = Path(tmp) / "long_novel.db"
+            storage._initialized = False
+            source = "我推开病房的门，看见母亲把缴费单按在桌上，妹妹在哭。" * 6
+            novel = storage.create_novel(
+                "忠实度门书",
+                [{"title": "短章", "summary": "梗概", "content": source}],
+                "single",
+            )
+            chapter_id = novel["chapters"][0]["id"]
+            job = storage.create_rewrite_job(
+                novel_id=novel["id"],
+                chapter_id=chapter_id,
+                model_id="m",
+                prompt_id="builtin:洗稿",
+                payload={
+                    "text": source,
+                    "prompt_id": "builtin:洗稿",
+                    "model_id": "m",
+                    "chapter_id": chapter_id,
+                    "novel_id": novel["id"],
+                    "quality_mode": "auto",
+                },
+            )
+
+            def fake_run_rewrite_payload(payload, progress_cb=None):
+                rewritten = "完全是另一场戏：他在海上钓金枪鱼。" * 6
+                return {
+                    "done": True,
+                    "rewritten": rewritten,
+                    "raw": rewritten,
+                    "quality": {"score": 95, "delivery_status": "excellent", "overlap4": 0.03, "issues": []},
+                }
+
+            with patch.dict(os.environ, {"REWRITE_SCENE_FIDELITY": "1"}), \
+                 patch.object(rewrite_worker, "run_rewrite_payload", side_effect=fake_run_rewrite_payload), \
+                 patch.object(rewrite_worker.api, "_scene_fidelity_issue", return_value="跑题换戏：成稿换成了另一场戏"):
+                result = rewrite_worker.process_job(storage.get_rewrite_job(job["id"]))
+
+            finished = storage.get_rewrite_job(job["id"])
+            self.assertFalse(result)  # 被打回，不直接落库
+            self.assertEqual(finished["status"], "queued")
+            self.assertIn("跑题换戏", finished["error"])
+
+            # 关闭开关时同一干净候选直接落库(默认不触发忠实度门)
+            job2 = storage.create_rewrite_job(
+                novel_id=novel["id"], chapter_id=chapter_id, model_id="m", prompt_id="builtin:洗稿",
+                payload={"text": source, "prompt_id": "builtin:洗稿", "model_id": "m",
+                         "chapter_id": chapter_id, "novel_id": novel["id"], "quality_mode": "auto"},
+            )
+            with patch.object(rewrite_worker, "run_rewrite_payload", side_effect=fake_run_rewrite_payload), \
+                 patch.object(rewrite_worker.api, "_scene_fidelity_issue", return_value="跑题换戏：应被开关挡住不调用"):
+                result2 = rewrite_worker.process_job(storage.get_rewrite_job(job2["id"]))
+            self.assertTrue(result2)
+            self.assertEqual(storage.get_rewrite_job(job2["id"])["status"], "done")
         storage.DATA_DIR = original_data_dir
         storage.DB_PATH = original_db_path
         storage._initialized = original_initialized

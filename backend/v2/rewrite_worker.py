@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 import traceback
 from collections.abc import Callable, Iterable
@@ -21,6 +22,10 @@ from . import api, storage
 SEGMENT_REWRITE_SOURCE_THRESHOLD = 2200
 SEGMENT_REWRITE_TARGET_CHARS = 2200
 SEGMENT_REWRITE_MIN_CHARS = 900
+# /v2/rewrite 对每次调用有"单段上限"，且依模型而定：DeepSeek 被 codex 压到 1600 字以提质量。
+# 若 worker 仍按固定 2200 分段，切出的段会超过该上限被 /v2/rewrite 直接 413 拒绝（连质量门都到不了），
+# 长章因此每段必失败→重试耗尽→回退旧稿。这里按模型实际上限分段；留一点安全余量避免边界越界。
+SEGMENT_REWRITE_SAFETY_MARGIN = 200
 CLAIM_LEASE_SECONDS = 1800
 TRUNCATED_OUTPUT_ERROR = "模型输出达到本次最大生成长度"
 
@@ -36,6 +41,23 @@ def _max_job_auto_retries() -> int:
 
 
 MAX_JOB_AUTO_RETRIES = _max_job_auto_retries()
+
+
+def _job_wall_clock_seconds() -> float:
+    """任务级总时限：超过它就停止继续重排，接受当前最佳候选。
+
+    长开篇/难章在"分段×段内重试×requeue"相乘下可能跑很久，过去只有单次模型调用
+    的 360s 上限、没有任务级总时限，导致一直磨到 requeue 耗尽才 error。这里给一个
+    保守的兜底总时限（默认 15 分钟，可用环境变量覆盖），到点就落最佳候选而非继续磨。
+    """
+    try:
+        value = float(os.environ.get("REWRITE_JOB_WALL_CLOCK_SECONDS", "900"))
+    except (TypeError, ValueError):
+        value = 900.0
+    return max(120.0, min(3600.0, value))
+
+
+REWRITE_JOB_WALL_CLOCK_SECONDS = _job_wall_clock_seconds()
 
 
 class JobOwnershipLost(RuntimeError):
@@ -211,6 +233,121 @@ def _chapter_update_for_rewrite(rewritten: str, quality: dict[str, Any]) -> dict
     return payload
 
 
+def _quality_requires_model_retry(quality: dict[str, Any] | None) -> bool:
+    if not quality:
+        return False
+    issues = quality.get("issues") or []
+    if issues:
+        return True
+    score = quality.get("score")
+    if score is not None:
+        try:
+            if float(score) < 75:
+                return True
+        except (TypeError, ValueError):
+            pass
+    status = str(
+        quality.get("delivery_status")
+        or quality.get("delivery_label")
+        or quality.get("grade")
+        or ""
+    ).strip().lower()
+    return status in {"review", "risk", "需复查", "高风险", "有风险"}
+
+
+def _job_over_budget(
+    job: dict[str, Any],
+    job_started: float | None,
+    payload: dict[str, Any] | None = None,
+) -> bool:
+    """是否应停止继续重排、接受当前最佳候选。
+
+    满足任一条件即为 True：
+      ① 已耗尽自动重试次数（retry_count >= MAX_JOB_AUTO_RETRIES）；
+      ② 本轮 process_job 单次耗时超过 REWRITE_JOB_WALL_CLOCK_SECONDS；
+      ③ 跨 requeue 的**总耗时**(从 payload.first_started_at 起算)超过该时限——
+         每次 requeue 都是新的 process_job 调用、job_started 会重置，靠持久化在 payload
+         里的首次开始时间(epoch)来给"反复重试"封一个总时间上界，避免长开篇磨很久。
+    过去丢弃整份候选→回退旧稿/置空(quality_score=null)，现在改为落"当前最佳候选"。
+    """
+    if int(job.get("retry_count") or 0) >= MAX_JOB_AUTO_RETRIES:
+        return True
+    if job_started is not None and (time.monotonic() - job_started) > REWRITE_JOB_WALL_CLOCK_SECONDS:
+        return True
+    first_started = (payload or {}).get("first_started_at")
+    if first_started is not None:
+        try:
+            if (time.time() - float(first_started)) > REWRITE_JOB_WALL_CLOCK_SECONDS:
+                return True
+        except (TypeError, ValueError):
+            pass
+    return False
+
+
+def _scene_fidelity_merged_quality(
+    payload: dict[str, Any],
+    rewritten: str,
+    source: str,
+    quality: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    """对"将被接受或兜底落库"的候选做一次 LLM 忠实度审核，命中换戏跑题则把'跑题换戏'并入 issues
+    (从而触发一次重试或在 best_effort 时如实标注)。换皮会改物件名，纯规则区分不了换皮与换戏，
+    故只能用语义判断；为控成本只在候选"否则就会落库"时跑一次。任何异常都原样返回，不阻塞。"""
+    if not quality:
+        return quality
+    # 特性开关：默认关闭(单测/无网环境零副作用)，线上 worker 用 -e REWRITE_SCENE_FIDELITY=1 开启。
+    if os.environ.get("REWRITE_SCENE_FIDELITY", "0") != "1":
+        return quality
+    if any('跑题换戏' in str(item) for item in (quality.get('issues') or [])):
+        return quality
+    try:
+        model_cfg = None
+        model_id = payload.get('model_id')
+        if model_id:
+            model_cfg = api.registry.get_model(model_id)
+        if model_cfg is None:
+            model_cfg = api.registry.get_active_model()
+        issue = api._scene_fidelity_issue(rewritten, source, model_cfg)
+    except Exception:
+        return quality
+    if not issue:
+        return quality
+    merged = dict(quality)
+    merged['issues'] = list(quality.get('issues') or []) + [issue]
+    try:
+        merged['score'] = max(0, int(merged.get('score') or 0) - 22)
+    except (TypeError, ValueError):
+        pass
+    merged['delivery_status'] = 'risk'
+    return merged
+
+
+def _quality_retry_failure_message(quality: dict[str, Any] | None) -> str:
+    if not quality:
+        return "质量复查未通过：缺少质量评分"
+    issues = [str(item).strip() for item in (quality.get("issues") or []) if str(item).strip()]
+    if issues:
+        return "质量复查未通过：" + "；".join(issues[:3])
+    label = (
+        quality.get("delivery_label")
+        or quality.get("delivery_status")
+        or quality.get("grade")
+        or "未达到交付线"
+    )
+    score = quality.get("score")
+    if score is None:
+        return f"质量复查未通过：{label}"
+    return f"质量复查未通过：{label}，评分 {score}"
+
+
+def _quality_failure_hint_for_retry(error: str) -> str:
+    """Preserve internal quality failure detail for the next model attempt."""
+    message = re.sub(r"\s+", " ", (error or "").strip())
+    if not message or "质量复查未通过" not in message:
+        return ""
+    return message[:900]
+
+
 def _finish_with_chapter_result(
     job: dict[str, Any],
     payload: dict[str, Any],
@@ -234,6 +371,37 @@ def _finish_with_chapter_result(
     return result
 
 
+def _payload_rewrite_limit(payload: dict[str, Any]) -> int:
+    """该 payload 所用模型在 /v2/rewrite 的单段上限（DeepSeek=1600，其它=split 目标）。"""
+    text = payload.get("text") or ""
+    model_cfg = None
+    try:
+        model_id = payload.get("model_id")
+        if model_id:
+            model_cfg = api.registry.get_model(model_id)
+        if model_cfg is None:
+            model_cfg = api.registry.get_active_model()
+    except Exception:
+        model_cfg = None
+    try:
+        return int(api._resolve_rewrite_target(text, None, model_cfg))
+    except Exception:
+        return SEGMENT_REWRITE_TARGET_CHARS
+
+
+def _segment_threshold_for(payload: dict[str, Any]) -> int:
+    """超过模型单段上限就必须分段（否则直连也会被 413）。对默认 2200 上限的模型保持原阈值。"""
+    return min(SEGMENT_REWRITE_SOURCE_THRESHOLD, _payload_rewrite_limit(payload))
+
+
+def _segment_target_for(payload: dict[str, Any]) -> int:
+    """分段目标：上限更小（如 DeepSeek 1600）时落到 上限-余量；否则维持原 2200（不影响其它模型）。"""
+    limit = _payload_rewrite_limit(payload)
+    if limit < SEGMENT_REWRITE_TARGET_CHARS:
+        return max(SEGMENT_REWRITE_MIN_CHARS, limit - SEGMENT_REWRITE_SAFETY_MARGIN)
+    return SEGMENT_REWRITE_TARGET_CHARS
+
+
 def _should_segment_payload(payload: dict[str, Any]) -> bool:
     if payload.get("internal_segment"):
         return False
@@ -241,7 +409,7 @@ def _should_segment_payload(payload: dict[str, Any]) -> bool:
         return False
     if payload.get("force_internal_segment"):
         return len((payload.get("text") or "").strip()) > SEGMENT_REWRITE_MIN_CHARS * 2
-    return len((payload.get("text") or "").strip()) > SEGMENT_REWRITE_SOURCE_THRESHOLD
+    return len((payload.get("text") or "").strip()) > _segment_threshold_for(payload)
 
 
 def _clean_segment_payload(payload: dict[str, Any], text: str) -> dict[str, Any]:
@@ -257,21 +425,41 @@ def _score_func_for_payload(payload: dict[str, Any]):
         payload.get("novel_id"),
         payload.get("chapter_id"),
     )
+    analysis_data = api._resolve_analysis_data(
+        payload.get("novel_id"),
+        payload.get("chapter_id"),
+    )
+    name_map = api._analysis_name_map(analysis_data)
 
     def score(rewritten: str, source: str) -> dict[str, Any]:
-        if not protected_terms:
+        if not protected_terms and not name_map:
             return api.score_rewrite_quality(rewritten, source)
-        return api.score_rewrite_quality(
-            rewritten,
-            source,
-            protected_terms=protected_terms,
-        )
+        kwargs: dict[str, Any] = {}
+        if protected_terms:
+            kwargs["protected_terms"] = protected_terms
+        if name_map:
+            kwargs["name_map"] = name_map
+        return api.score_rewrite_quality(rewritten, source, **kwargs)
 
     return score
 
 
 def _is_truncated_output_error(exc: Exception) -> bool:
     return TRUNCATED_OUTPUT_ERROR in str(exc)
+
+
+def _segment_payload_for_budget(payload: dict[str, Any], job_started: float | None) -> dict[str, Any]:
+    """已用掉 60% 总时限后，把后续分段的 quality_mode 降到 balanced，避免每段还在 auto/deep
+    跑满重试把总时长继续拉长（fast 会关掉格式自愈，故降到 balanced 而非 fast）。"""
+    if job_started is None:
+        return payload
+    if (time.monotonic() - job_started) <= REWRITE_JOB_WALL_CLOCK_SECONDS * 0.6:
+        return payload
+    if str(payload.get("quality_mode") or "").strip().lower() not in {"", "auto", "deep"}:
+        return payload
+    downgraded = dict(payload)
+    downgraded["quality_mode"] = "balanced"
+    return downgraded
 
 
 def _run_segment_piece(
@@ -282,12 +470,13 @@ def _run_segment_piece(
     floor: int,
     ceiling: int,
     depth: int = 0,
+    job_started: float | None = None,
 ) -> list[tuple[str, dict[str, Any]]]:
     if _job_is_canceled(job["id"]):
         raise RuntimeError("任务已取消")
     try:
         segment_result = run_rewrite_payload(
-            _clean_segment_payload(payload, chunk),
+            _clean_segment_payload(_segment_payload_for_budget(payload, job_started), chunk),
             progress_cb=_progress_callback(
                 job,
                 source_len=len(chunk),
@@ -319,6 +508,7 @@ def _run_segment_piece(
                     floor=sub_floor,
                     ceiling=max(sub_floor + 1, sub_ceiling),
                     depth=depth + 1,
+                    job_started=job_started,
                 )
             )
         return results
@@ -355,11 +545,24 @@ def _persist_direct_rewrite_result(
     payload: dict[str, Any],
     result: dict[str, Any],
     quality: dict[str, Any],
+    job_started: float | None = None,
 ) -> dict[str, Any]:
     source = (payload.get("text") or "").strip()
     rewritten = (result.get("rewritten") or "").strip()
     if not rewritten:
         raise RuntimeError("模型返回空正文")
+    analysis_data = api._resolve_analysis_data(
+        payload.get("novel_id"),
+        payload.get("chapter_id"),
+    )
+    name_map = api._analysis_name_map(analysis_data)
+    repaired = api._repair_name_map_residue(
+        api._repair_non_core_detail_residue(rewritten, source),
+        name_map,
+    )
+    if repaired != rewritten:
+        rewritten = repaired
+        quality = _score_func_for_payload(payload)(rewritten, source)
 
     protected_terms = api._resolve_quality_protected_terms(
         payload.get("novel_id"),
@@ -371,6 +574,13 @@ def _persist_direct_rewrite_result(
         source,
         score_func,
     )
+    # 旧稿可能是修复前留下的、带替换脏数据(重复人名等)的版本；保留旧稿前先清一次，
+    # 避免"新候选打不过旧脏稿→保留旧脏稿"把脏数据永久留在章节里。
+    if existing_rewritten:
+        cleaned_existing = api._repair_name_map_residue(existing_rewritten, name_map)
+        if cleaned_existing != existing_rewritten:
+            existing_rewritten = cleaned_existing
+            existing_quality = score_func(existing_rewritten, source)
     kept_previous = False
     if existing_rewritten and existing_quality and not api._candidate_quality_is_better(
         quality,
@@ -386,6 +596,15 @@ def _persist_direct_rewrite_result(
 
     if _job_is_canceled(job["id"]):
         raise RuntimeError("任务已取消")
+    # 候选若将被接受(无需重试)或已到预算上限(将兜底落库)，先做一次忠实度审核抓换戏跑题。
+    if (not _quality_requires_model_retry(quality)) or _job_over_budget(job, job_started, payload):
+        quality = _scene_fidelity_merged_quality(payload, rewritten, source, quality)
+    best_effort = False
+    if _quality_requires_model_retry(quality):
+        if not _job_over_budget(job, job_started, payload):
+            raise RuntimeError(_quality_retry_failure_message(quality))
+        # 重试次数/总时限已耗尽：不再回退旧稿/置空，落"当前最佳候选"为成稿。
+        best_effort = True
 
     persisted = dict(result)
     persisted.update(
@@ -398,6 +617,9 @@ def _persist_direct_rewrite_result(
     )
     if kept_previous:
         persisted["kept_previous"] = True
+    if best_effort:
+        persisted["best_effort"] = True
+        persisted["quality_issues_remaining"] = quality.get("issues") or []
     _ensure_owned_update(job, phase="saving", progress=94)
     return _finish_with_chapter_result(job, payload, persisted, rewritten, quality)
 
@@ -417,7 +639,11 @@ def _finish_with_existing_rewrite_if_usable(
         source,
         _score_func_for_payload(payload),
     )
-    if not existing_rewritten or not existing_quality or existing_quality.get("issues"):
+    if (
+        not existing_rewritten
+        or not existing_quality
+        or _quality_requires_model_retry(existing_quality)
+    ):
         return False
     result = {
         "done": True,
@@ -458,6 +684,12 @@ def _requeue_job_for_retry(
     next_payload = dict(payload)
     if force_segment:
         next_payload["force_internal_segment"] = True
+    quality_hint = _quality_failure_hint_for_retry(error)
+    if quality_hint:
+        next_payload["quality_failure_hint"] = quality_hint
+        # 注意：不再在 retry>=2 时自动升 deep。deep 会把每段重试次数拉满，叠加分段后
+        # 让"越重试越慢"，而 best_effort 兜底已能保证最终落稿，无需靠 deep 防 null。
+        # 用户仍可显式选择 deep 模式。
     updated = _update(
         job,
         status="queued",
@@ -476,9 +708,13 @@ def _requeue_job_for_retry(
     return True
 
 
-def _run_segmented_job(job: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
+def _run_segmented_job(
+    job: dict[str, Any],
+    payload: dict[str, Any],
+    job_started: float | None = None,
+) -> dict[str, Any]:
     source = (payload.get("text") or "").strip()
-    chunks = api._chunk_text(source, SEGMENT_REWRITE_TARGET_CHARS)
+    chunks = api._chunk_text(source, _segment_target_for(payload))
     if len(chunks) <= 1:
         return run_rewrite_payload(payload)
 
@@ -506,6 +742,7 @@ def _run_segmented_job(job: dict[str, Any], payload: dict[str, Any]) -> dict[str
             chunk,
             floor=floor,
             ceiling=ceiling,
+            job_started=job_started,
         )
         _ensure_owned_update(job, phase="segment_rewrite", progress=ceiling)
         for rewritten, quality in segment_results:
@@ -517,6 +754,17 @@ def _run_segmented_job(job: dict[str, Any], payload: dict[str, Any]) -> dict[str
 
     _ensure_owned_update(job, phase="merging", progress=84)
     merged = "\n\n".join(part.strip() for part in rewritten_parts if part.strip()).strip()
+    # 长章合并后同样做"非核心细节 + 人名残留(含连续重复/首字粘连脏数据)"确定性修复，
+    # 与直连路径对齐——此前分段路径完全跳过修复，长章易残留替换脏数据。
+    analysis_data = api._resolve_analysis_data(
+        payload.get("novel_id"),
+        payload.get("chapter_id"),
+    )
+    name_map = api._analysis_name_map(analysis_data)
+    merged = api._repair_name_map_residue(
+        api._repair_non_core_detail_residue(merged, source),
+        name_map,
+    )
     score_func = _score_func_for_payload(payload)
     protected_terms = api._resolve_quality_protected_terms(
         payload.get("novel_id"),
@@ -531,6 +779,11 @@ def _run_segmented_job(job: dict[str, Any], payload: dict[str, Any]) -> dict[str
         source,
         score_func,
     )
+    if existing_rewritten:
+        cleaned_existing = api._repair_name_map_residue(existing_rewritten, name_map)
+        if cleaned_existing != existing_rewritten:
+            existing_rewritten = cleaned_existing
+            existing_quality = score_func(existing_rewritten, source)
     kept_previous = False
     if existing_rewritten and existing_quality and not api._candidate_quality_is_better(
         final_quality,
@@ -544,6 +797,15 @@ def _run_segmented_job(job: dict[str, Any], payload: dict[str, Any]) -> dict[str
         final_quality = existing_quality
         kept_previous = True
 
+    if (not _quality_requires_model_retry(final_quality)) or _job_over_budget(job, job_started, payload):
+        final_quality = _scene_fidelity_merged_quality(payload, merged, source, final_quality)
+    best_effort = False
+    if _quality_requires_model_retry(final_quality):
+        if not _job_over_budget(job, job_started, payload):
+            raise RuntimeError(_quality_retry_failure_message(final_quality))
+        # 重试次数/总时限已耗尽：落已合并的"当前最佳候选"，不回退旧稿/置空。
+        best_effort = True
+
     result = {
         "done": True,
         "rewritten": merged,
@@ -555,6 +817,9 @@ def _run_segmented_job(job: dict[str, Any], payload: dict[str, Any]) -> dict[str
         "segment_qualities": segment_qualities,
         "kept_previous": kept_previous,
     }
+    if best_effort:
+        result["best_effort"] = True
+        result["quality_issues_remaining"] = final_quality.get("issues") or []
     _ensure_owned_update(job, phase="saving", progress=92)
     return _finish_with_chapter_result(job, payload, result, merged, final_quality)
 
@@ -566,9 +831,12 @@ def process_job(job: dict[str, Any]) -> bool:
         return False
     payload: dict[str, Any] = {}
     payload_loaded = False
+    job_started = time.monotonic()
     try:
         payload = _job_payload(job)
         payload_loaded = True
+        # 记录首次开始时间(epoch)，供跨 requeue 的总时限判定；requeue 通过 dict(payload) 自动延续。
+        payload.setdefault("first_started_at", time.time())
         if _job_is_canceled(job["id"]):
             return False
         _ensure_owned_update(job, status="running", phase="initial", progress=5)
@@ -577,7 +845,7 @@ def process_job(job: dict[str, Any]) -> bool:
 
         did_segment = _should_segment_payload(payload)
         if did_segment:
-            _run_segmented_job(job, payload)
+            _run_segmented_job(job, payload, job_started=job_started)
             return True
         else:
             direct_payload = dict(payload)
@@ -602,7 +870,9 @@ def process_job(job: dict[str, Any]) -> bool:
             and payload.get("chapter_id")
             and (payload.get("task_type") in (None, "rewrite"))
         ):
-            result = _persist_direct_rewrite_result(job, payload, result, quality)
+            result = _persist_direct_rewrite_result(
+                job, payload, result, quality, job_started=job_started
+            )
             return True
         _finish_with_result(job, result)
         return True

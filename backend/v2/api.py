@@ -195,21 +195,22 @@ user:
 - 禁止输出思考过程、解释、自检、风格描述；代码块内只放最终洗稿正文，代码块外不要输出任何文字。
 - 不要输出简介、梗概、前情提要、标题、分章符、风格说明、分析、自检，也不要用 \"\"\" 包正文。
 - 保留故事内核：人物关系、事件因果、关键冲突、反转点、情绪功能必须对应。
-- 改掉表达外壳：人名、称谓、场所细节、叙事切入、段落形状、对白节奏、句式和文风必须明显不同。
+- 改掉表达外壳：人名、称谓、场所细节、非核心日期/编号/死法、叙事切入、段落形状、对白节奏和文风必须明显不同。
 - 题材/世界观策略（默认稳态）：没有明确【目标题材/世界观】时，不要随机跨大题材；保持原稿大题材和核心生活逻辑，只做深度表达与结构重构。
 - 结构相似度参考 60% 以内，4-gram 重合 22% 以内；优秀目标是 15% 以内。
-- 这是"改写"不是"创作"：你在改写别人已有的稿子，逐一对应原文已有的情节、事件、对白换皮重写，不是写新小说。"写好"指措辞地道、对白自然、画面清楚、不僵硬模板化——**不指写得更长更丰富更爽**。呈现方式（句长、节奏、对白、镜头、切入角度）可自由调整；但**写什么、写多长由原文决定**：剧情骨架/事件/因果/数字/人物关系必须忠实原文、不增删，人名地名严格按下方【本书洗稿对照表】统一替换（不得自创表外名字），视角不漂移，4-gram 重合达标，内容合规，篇幅贴近原文（见下）。
+- 这是"改写"不是"创作"：逐一对应原文已有情节、事件、对白换皮重写，不写新小说，不扩写爽点。剧情骨架/事件因果/人物关系/关键反转忠实原文；金额、年龄、婚龄、亲缘和证据性质等核心数字保留，非核心日期、诊室编号、普通地点、死法、体检科室、手续日期等表层细节换成同功能新细节。人名地名严格按【本书洗稿对照表】统一替换，不自创表外名字；视角不漂移，篇幅贴近原文。
 
 ═════════ 客户式重构动作 ═════════
 
 1. 第一屏直接进入动作、对白、感官或冲突，不先介绍人物设定，不写“他叫/她叫/这是一个故事”式开场。**开篇也是改写不是创作：只用原文开头已有的内容换角度切入，不替原文新增开场宣言、内心独白、爽点、反转或后续剧情，开头改完长度仍贴近原文开头。**
 2. 开头要换功能：可从冲突后果、旁人反应、证据物件、身体反应、环境异常或一句强对白切入，不沿用原文第一句动作（但只用原文已有的元素重新切入，不新增内容）。
-2.5 强钩子开篇（贴短剧风格）：第一句就要狠、要勾人。优先两种钩子——①一句**点破核心反差/利害/悬念的爆点陈述句**（取自本章前提，像“白宁冰破产了，我是她唯一剩下的‘家产’”“1975年这大旱天，水就是命”这种一句话砸下来）；或②本章最戏剧化的一句冲突对白/危险信号。**不要用平淡的内心交代、设定铺陈开头。但有两条铁律**：①钩子只能取本章已有的内容，不许为造钩子新增情节；②钩子之后必须**回到并忠实改写本章原本的那场戏**——绝不能用钩子取代正文、把整章改写成另一场戏或另一个人的视角（这是最常见的严重错误）。
+2.5 强钩子开篇（贴短剧风格）：第一句就要狠、要勾人。优先两种钩子——①一句**点破核心反差/利害/悬念的爆点陈述句**（取自本章前提，像“白宁冰破产了，我是她唯一剩下的‘家产’”“1975年这大旱天，水就是命”这种一句话砸下来）；或②本章最戏剧化的一句冲突对白/危险信号。**不要用平淡的内心交代、设定铺陈开头。但有两条铁律**：①钩子只能取本章已有的内容，不许为造钩子新增情节；②钩子之后必须**回到并忠实改写本章原本的那场戏**——绝不能用钩子取代正文、把整章改写成另一场戏或另一个人的视角（这是最常见的严重错误）。注："忠实"指事件因果忠实、**非叙述顺序忠实**：开场几拍要打散重排。
 3. 前 200 字要短、准、狠，少用形容词、比喻和长修饰链；如果原稿前段有可用对白，成稿第一句尽量直接上带引号对白，不要先写“沉闷空气、刺骨凉意、死一般寂静”式氛围铺垫。
 4. 背景信息拆散到后文，用 2-4 次短回补穿插在动作和对白之间；前 10 个自然段不能对应原文前 10 段。
 5. 不得逐句换词，不得按原段落一一平移；至少 40% 的背景、心理、旁支动作和证据揭示要换位置。
 6. 对白只保留冲突功能，不保留说法；问答顺序、语气强弱、停顿和反击节奏都要重写。
 7. 不连续保留原文 8 字以上表达；不要出现像“换了名字的原文”的段落。
+8. 非核心细节必须替换：“捡垃圾死”“医院体检”“2号诊室”“6月12日办手续”等不能原样沿用；改成同功能新死法、新科室、新日期或新编号，但不改核心因果和人物关系。
 
 ═════════ 剧情感与视角 ═════════
 
@@ -340,7 +341,7 @@ def _model_with_quality_retry_budget(
     issue_text = '；'.join(issues or [])
     source_len = len((source_text or '').strip())
     if '篇幅过长' in issue_text:
-        retry_budget = int(_estimate_text_tokens(source_text) * 0.72 + 520)
+        retry_budget = int(_estimate_text_tokens(source_text) * 0.58 + 430)
     elif '篇幅过短' in issue_text:
         retry_budget = int(_estimate_text_tokens(source_text) * 1.12 + 720)
     elif (
@@ -348,6 +349,7 @@ def _model_with_quality_retry_budget(
         or '表达重合过高' in issue_text
         or '连续表达保留过长' in issue_text
         or '表层换皮不足' in issue_text
+        or '非核心细节照搬' in issue_text
         or '内部重复' in issue_text
         or 'AI套话' in issue_text
         or '流水账风险' in issue_text
@@ -360,7 +362,9 @@ def _model_with_quality_retry_budget(
     else:
         retry_budget = int(_estimate_text_tokens(source_text) * 1.02 + 520)
     min_budget = 2048
-    if '篇幅过长' in issue_text and source_len < 1200:
+    if '篇幅过长' in issue_text and source_len < 800:
+        min_budget = 768
+    elif '篇幅过长' in issue_text and source_len < 1200:
         min_budget = 1024
     elif '篇幅过长' in issue_text and source_len < 1800:
         min_budget = 1536
@@ -380,6 +384,8 @@ def _quality_retry_temperature_for(issues: list[str] | None = None) -> float:
         return 0.58
     if '开头钩子不足' in issue_text or '节奏拖沓' in issue_text:
         return 0.62
+    if '叙述骨架照搬' in issue_text:
+        return 0.8  # 开场节拍重排是结构性创造，需比"结构相似"更高的探索温度才能跳出同一骨架
     if '结构相似' in issue_text or '开头切入太像' in issue_text:
         return 0.74
     return QUALITY_RETRY_TEMPERATURE
@@ -396,18 +402,100 @@ def _fenced_material(label: str, text: str) -> str:
     return f'\n{label}\n{fence}\n{(text or "").strip()}\n{fence}'
 
 
+def _non_core_detail_hard_guard(detail_terms: list[str]) -> str:
+    compact_terms = [_compact_for_overlap(term) for term in detail_terms if term]
+    if not compact_terms:
+        return ''
+    rules: list[str] = []
+    if any(re.search(r'\d{1,2}月\d{1,2}[日号]', term) for term in compact_terms):
+        rules.append('原文日期必须整体换掉，不能只把“号”换成“日”，也不能写“距离原日期还有几天”。')
+    if any('诊室' in term or '窗口' in term or '体检' in term for term in compact_terms):
+        rules.append('诊室/窗口/体检场景必须换成同功能新触发点，编号、地点和叫号方式都要换。')
+    if any(any(marker in term for marker in ('垃圾', '废品', '破烂', '拾荒', '废纸板', '纸板', '塑料瓶', '旧纸箱')) for term in compact_terms):
+        rules.append('凄惨死法必须换成完全不同字面的死法，禁止继续出现“垃圾/废品/破烂/拾荒/废纸板/塑料瓶”，不能写成“捡三天垃圾”或“翻废品”。')
+    if any('离婚证' in term or '离婚登记' in term or '婚姻登记' in term or '离婚协议' in term for term in compact_terms):
+        rules.append('手续证据可保留功能，但不要继续使用“离婚证/离婚登记/婚姻登记/离婚协议”等原字面，可改成系统档案、关系解除回执、签收单或状态记录。')
+    if not rules:
+        return ''
+    return '硬性替换规则：' + ''.join(rules)
+
+
 def _source_surface_anchor_instruction(original_text: str) -> str:
     terms = _surface_anchor_terms_for_prompt(original_text)
-    if not terms:
+    detail_terms = _non_core_detail_terms_for_prompt(original_text)
+    if not terms and not detail_terms:
         return ''
+    detail_line = ''
+    if detail_terms:
+        detail_line = (
+            '这些非核心细节也不能照搬：' + '、'.join(detail_terms) + '。'
+            '日期可前后挪，编号/诊室/窗口可换，普通死法、体检地点、手续场景可改成同功能新细节；'
+            '只保留它们承担的剧情功能，不保留原字面。'
+            + _non_core_detail_hard_guard(detail_terms)
+        )
+    anchor_line = ''
+    if terms:
+        anchor_line = (
+            '下面这些是原文的人名、物件、地点、称谓或场所锚点，除真实公众人物/历史人物外，不得原样出现在成稿：'
+            + '、'.join(terms)
+            + '。必须换成新的命名体系、物件外观、场所细节和对白称呼；剧情功能可以保留，但表层锚点必须换掉。'
+            '哪怕锚点看起来像动物名、绰号、神怪称谓或固定物件名，也要换成同功能的新说法。'
+            '不要只删修饰词后继续保留核心二字锚点，例如原文出现“山涧木屋”，成稿也不能继续写“木屋”。'
+        )
     return (
         '【表层换皮硬约束】\n'
-        '下面这些是原文的人名、物件、地点、称谓或场所锚点，除真实公众人物/历史人物外，不得原样出现在成稿：'
-        + '、'.join(terms)
-        + '。必须换成新的命名体系、物件外观、场所细节和对白称呼；剧情功能可以保留，但表层锚点必须换掉。'
-        '哪怕锚点看起来像动物名、绰号、神怪称谓或固定物件名，也要换成同功能的新说法。'
-        '不要只删修饰词后继续保留核心二字锚点，例如原文出现“山涧木屋”，成稿也不能继续写“木屋”。'
+        + anchor_line
+        + detail_line
     )
+
+
+def _quality_failure_hint_instruction(hint: str, source_len: int) -> str:
+    """Turn an internal quality failure into a focused retry instruction."""
+    hint = (hint or '').strip()
+    if not hint:
+        return ''
+    compact_hint = re.sub(r'\s+', ' ', hint)[:900]
+    lines = [
+        '【上一轮未成稿原因】',
+        compact_hint,
+        '这是系统内部质量返修提示，只用于本轮重写；禁止在成稿中出现“质量复查、未通过、待完善、自动重试”等提示语。',
+    ]
+    if '篇幅过长' in compact_hint:
+        max_len = max(180, int(source_len * 1.03))
+        lines.append(
+            f'上一轮篇幅过长：这次必须压回原文长度附近，绝对不要超过 {max_len} 字；'
+            '原文写到哪就到哪，删掉新增支线、前世补写、重复解释、无关对白和续写收尾。'
+        )
+    if '篇幅过短' in compact_hint:
+        min_len = max(120, int(source_len * 0.90))
+        lines.append(
+            f'上一轮篇幅过短：这次不得少于 {min_len} 字，补回原文已有的动作、对白、证据、身体反应和情绪递进，不能写成摘要。'
+        )
+    if '表层换皮不足' in compact_hint or '表达重合' in compact_hint or '连续表达' in compact_hint:
+        anchors = re.findall(r'“([^”]{1,120})”', compact_hint)
+        anchor_text = '、'.join(anchors[:4]) if anchors else ''
+        if anchor_text:
+            lines.append(
+                f'上一轮残留锚点：{anchor_text}。这些词或短语必须逐个换成同功能但不同字面的表达，'
+                '不要只换前后修饰词后保留核心词。'
+            )
+        else:
+            lines.append('上一轮表层换皮不足：重写人名、物件、场所、称谓、对白和句式，不连续保留原文 8 字以上表达。')
+    if '非核心细节照搬' in compact_hint or any(
+        word in compact_hint
+        for word in ('捡垃圾', '翻垃圾', '翻废品', '捡废品', '拾荒', '废纸板', '纸板', '塑料瓶', '旧纸箱')
+    ):
+        lines.append(
+            '上一轮非核心细节没有换干净：普通日期、编号、诊室、体检地点、手续证据、死法都必须改成新细节。'
+            '尤其原文含“捡垃圾/翻垃圾/拾荒”时，禁止改成“翻废品、废纸板、塑料瓶、捡破烂”等近义场景；'
+            '请换成真正不同的凄惨死法，例如病倒、摔伤、追债事故、寒夜冻毙等，但不要照搬这些示例原句。'
+        )
+    if '叙述骨架照搬' in compact_hint or '结构相似' in compact_hint:
+        lines.append(
+            '上一轮结构太像：不要按原文段落功能平移；从结果余波、证据物件、旁人反应、身体异常或冲突对白切入，'
+            '把日期/记录/医院/死亡原因等信息拆开重排。'
+        )
+    return '\n'.join(lines)
 
 
 def _build_rewrite_messages(
@@ -417,6 +505,7 @@ def _build_rewrite_messages(
     analysis_block: str = '',
     task: str = 'rewrite',
     genre_hint: str = '',
+    quality_failure_hint: str = '',
 ) -> list[dict]:
     """Convert a 洗稿 prompt + original text into a chat-completions
     messages array. We collapse the multi-turn context_prompt scaffolding into
@@ -464,6 +553,10 @@ def _build_rewrite_messages(
         length_instruction = _length_constraint_instruction(original_text)
         if length_instruction:
             body_parts.append(length_instruction)
+            body_parts.append('\n———————————————————\n')
+        retry_hint_instruction = _quality_failure_hint_instruction(quality_failure_hint, len(original_text))
+        if retry_hint_instruction:
+            body_parts.append(retry_hint_instruction)
             body_parts.append('\n———————————————————\n')
         surface_instruction = _source_surface_anchor_instruction(original_text)
         if surface_instruction:
@@ -663,6 +756,12 @@ def _narrative_pov_instruction(original_text: str) -> str:
 
 def _structure_rewrite_instruction(original_text: str) -> str:
     lengths = _paragraph_lengths(original_text)
+    hard_rebuild = (
+        '动笔前先在内部确定一个不同于原文的 3-5 步叙述顺序，但不要输出提纲或说明；'
+        '第一段不得继续使用原文第一段的同一场景、同一动作或同一句对白功能开头。'
+        '若原文从婚礼/诊室/文件/系统记录/死亡回忆开场，可改从证据物件被发现、旁人反应、结果余波、'
+        '对方失态、身体异常或一句冲突对白切入，再分批回补原文前因。'
+    )
     if len(lengths) >= 30 and sorted(lengths)[len(lengths) // 2] <= 60:
         target_min = max(8, int(len(lengths) * 0.18))
         target_max = max(target_min + 3, min(25, int(len(lengths) * 0.32)))
@@ -675,6 +774,7 @@ def _structure_rewrite_instruction(original_text: str) -> str:
             '背景信息拆散到后文，用 2-4 次短回补插入场景，不要按原段落顺序复述。'
             '至少换掉开场功能，不得保留原文“醒来-观察-回忆-来人-递药”等同一叙事骨架；'
             '首稿就尽量让结构和原文明显不同（结构相似度参考 60% 以内），段落数量、段落长短和信息释放顺序都必须明显不同。'
+            + hard_rebuild
         )
     if len(lengths) >= 4 and sum(1 for item in lengths[:10] if item <= 45) >= 4:
         target_min = max(3, min(8, int(len(lengths) * 0.25)))
@@ -688,6 +788,7 @@ def _structure_rewrite_instruction(original_text: str) -> str:
             '至少换掉开场功能，不得保留原文“醒来-观察-回忆-来人-递药”等同一叙事骨架；'
             '优先从结果余波、旁人反应、关键物件、身体反应或门外异动切入，再回补原文第一幕。'
             '首稿就尽量让结构和原文明显不同（结构相似度参考 60% 以内），避免只勉强贴近 50% 交付线。'
+            + hard_rebuild
         )
     if len(lengths) >= 3 and sum(lengths) >= 450:
         return (
@@ -698,6 +799,7 @@ def _structure_rewrite_instruction(original_text: str) -> str:
             '成稿前 8 段不能和原文前 8 段形成“同事件、同功能、同长短”的逐段对应；'
             '优先从结果余波、旁人反应、关键物件、身体反应或门外异动切入，再回补原文第一幕。'
             '首稿就尽量让结构和原文明显不同（结构相似度参考 60% 以内），不能只在姓名和器物上换皮。'
+            + hard_rebuild
         )
     return ''
 
@@ -942,6 +1044,109 @@ def _structure_similarity(a: str, b: str) -> float:
     return max(0.0, min(1.0, (count_similarity * 0.45) + (shape_similarity * 0.55)))
 
 
+_NARRATIVE_BEAT_PATTERNS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ('wake', ('睁眼', '醒来', '醒了', '醒过来', '再醒')),
+    ('record', ('系统', '记录', '证明', '档案', '登记', '屏幕', '资料', '文件')),
+    ('date', ('日期', '半年前', '那天', '当天', '那一天', '某年', '初春', '月', '日', '号')),
+    ('divorce', ('离婚', '分开', '婚姻登记', '协议', '手续', '民政')),
+    ('memory', ('想起', '记得', '记起', '回忆', '上一世', '前世', '那时候')),
+    ('relative', ('丈夫', '妻子', '婆婆', '女儿', '儿子', '父亲', '母亲', '家人')),
+    ('document', ('文件', '资料', '材料', '证件', '纸', '合同', '姓名', '签字', '签名', '签完', '摁手印')),
+    ('banquet', ('婚礼', '典礼', '宴会', '宴厅', '大厅', '酒席', '礼台')),
+    ('humiliation', ('笑', '嘲', '骂', '讥', '羞辱', '冷眼', '看不起')),
+    ('death', ('死', '倒在', '断气', '断了气', '尸', '车祸', '雨夜', '路边')),
+    ('trash', ('垃圾', '废品', '拾荒', '捡破烂', '翻找')),
+    ('hospital', ('医院', '体检', '诊室', '护士', '医生', '叫号', '检查', '化验')),
+    ('dialogue', ('“', '”', '"', '？', '?', '！', '!')),
+)
+
+
+def _narrative_beat_sequence(text: str, max_units: int = 14) -> list[str]:
+    units = [
+        item.strip()
+        for item in re.split(r'[\n。！？!?；;]+', text or '')
+        if _compact_for_overlap(item)
+    ][:max_units]
+    beats: list[str] = []
+    for unit in units:
+        compact = _compact_for_overlap(unit)
+        unit_beats = [
+            label
+            for label, patterns in _NARRATIVE_BEAT_PATTERNS
+            if any(pattern in compact for pattern in patterns)
+        ]
+        for beat in unit_beats[:2]:
+            if not beats or beats[-1] != beat:
+                beats.append(beat)
+    return beats[:16]
+
+
+def _sequence_lcs_len(left: list[str], right: list[str]) -> int:
+    if not left or not right:
+        return 0
+    prev = [0] * (len(right) + 1)
+    for item in left:
+        curr = [0] * (len(right) + 1)
+        for j, other in enumerate(right, 1):
+            if item == other:
+                curr[j] = prev[j - 1] + 1
+            else:
+                curr[j] = max(prev[j], curr[j - 1])
+        prev = curr
+    return prev[-1]
+
+
+def _opening_beat_similarity(rewritten: str, source: str) -> float:
+    source_beats = _narrative_beat_sequence(source)
+    rewritten_beats = _narrative_beat_sequence(rewritten)
+    baseline = min(len(source_beats), len(rewritten_beats))
+    if baseline < 5:
+        return 0.0
+    lcs = _sequence_lcs_len(source_beats, rewritten_beats)
+    return max(0.0, min(1.0, lcs / baseline))
+
+
+def _opening_beat_issue(rewritten: str, source: str) -> str:
+    source_beats = _narrative_beat_sequence(source)
+    rewritten_beats = _narrative_beat_sequence(rewritten)
+    baseline = min(len(source_beats), len(rewritten_beats))
+    if baseline < 5:
+        return ''
+    lcs = _sequence_lcs_len(source_beats, rewritten_beats)
+    similarity = lcs / baseline
+    if lcs >= 5 and similarity >= 0.75:
+        return (
+            f'叙述骨架照搬：开场事件功能顺序相似度 {similarity:.0%}，'
+            '不能按原文“记录/日期-回忆-文件/签字-死法-医院”等节拍平移，需要换切入点并重排信息释放'
+        )
+    return ''
+
+
+_BEAT_LABEL_CN: dict[str, str] = {
+    'wake': '醒来/重生',
+    'record': '系统记录/档案',
+    'date': '日期',
+    'divorce': '离婚/分开',
+    'memory': '回忆/前世',
+    'relative': '亲属关系交代',
+    'document': '文件/签字',
+    'banquet': '婚礼/宴会',
+    'humiliation': '羞辱/嘲讽',
+    'death': '死亡/死法',
+    'trash': '拾荒/捡垃圾',
+    'hospital': '医院/诊室/体检',
+    'dialogue': '对白',
+}
+
+
+def _opening_beat_order_hint(source: str, max_beats: int = 8) -> str:
+    """把检测到的原文开场节拍序列翻译成人话，喂回重试指令，让模型明确知道
+    "上一版照搬了哪串节拍顺序"，而不是凭感觉换开头第一句后正文又按原顺序平移。"""
+    beats = _narrative_beat_sequence(source)
+    names = [_BEAT_LABEL_CN.get(beat, beat) for beat in beats[:max_beats]]
+    return ' → '.join(names)
+
+
 def _longest_common_substring_len(a: str, b: str, cap: int = 80) -> int:
     left = _compact_for_overlap(a)
     right = _compact_for_overlap(b)
@@ -1005,6 +1210,7 @@ _SURFACE_ANCHOR_STOP_TERMS = {
     '马车', '帖子',
     '王妃', '适婚', '路费', '学费', '生活费', '开学', '宿舍', '码头',
     '申时末', '时末才', '隔半盏茶', '回府',
+    '婚礼', '典礼', '新婚', '离婚', '轮椅', '满堂', '安排', '安排得',
 }
 _NAME_TRAILING_CONTEXT_CHARS = set(
     '在有到从往向把被给让对看听说问答喊叫骂笑哭想知觉醒睡撑坐站走跑'
@@ -1040,6 +1246,27 @@ _SURFACE_FIXED_PHRASE_ANCHORS = (
     '九连环',
     '倾国倾城',
 )
+# 通用场景/房间/场所词：它们不是人名、也不是独特物件，"换不换皮"对去重意义有限
+# （灶房→厨房、诊室→病房 改了也认得出是同一本书）。过去这些词以"房/厅/屋/堂/院"结尾
+# 被当成强表层锚点，导致即使人名都换对、只保留一个通用房间词也报"表层换皮不足"+进重试，
+# 是过度告警，还助推了长开篇的重试耗尽。比照核心剧情词白名单，将其排除出锚点判定。
+# 带编号的具体场景（如"2号诊室"）仍由 _non_core_detail_residue_issue 单独兜住，不受影响。
+_GENERIC_SCENE_TERMS = {
+    '厨房', '灶房', '后厨', '堂屋', '正屋', '偏房', '柴房', '卧房', '卧室', '书房',
+    '病房', '产房', '婚房', '客厅', '客房', '大厅', '前厅', '宴会厅', '饭厅', '餐厅',
+    '门厅', '走廊', '楼道', '过道', '阳台', '院子', '前院', '后院', '院落', '天井',
+    '灶台', '饭桌', '餐桌', '炕头', '床边', '门口', '屋里', '屋外', '屋内', '店里',
+    '铺子', '车上', '车里', '卫生间', '洗手间', '浴室', '诊室', '病区', '护士站',
+    '大堂', '大门', '正厅', '偏厅', '内室', '耳房', '厢房', '正房', '后堂',
+}
+
+
+def _is_generic_scene_term(term: str) -> bool:
+    """是否为通用场景/房间/场所词（含被切碎的脏片段，如"宴会厅灯火"含"宴会厅"、
+    "会厅"是"宴会厅"被切出的碎片），双向子串匹配才能干净剔除。"""
+    if not term:
+        return False
+    return any(term == scene or term in scene or scene in term for scene in _GENERIC_SCENE_TERMS)
 
 
 def _looks_like_name(term: str) -> bool:
@@ -1178,12 +1405,16 @@ def _retained_surface_anchors(
     retained = [
         term
         for term in source_terms
-        if term in rewritten_compact and not _is_protected_surface_term(term, protected)
+        if term in rewritten_compact
+        and not _is_protected_surface_term(term, protected)
+        and not _is_generic_scene_term(term)
     ]
     return _dedupe_nested_terms(retained)
 
 
 def _is_strong_surface_anchor(term: str) -> bool:
+    if _is_generic_scene_term(term):
+        return False
     return len(term or '') >= 2 and term[-1] in _STRONG_SURFACE_ANCHOR_SUFFIXES
 
 
@@ -1211,22 +1442,177 @@ def _surface_anchor_issue(rewritten: str, source: str, protected_terms: object =
     )
 
 
+_NON_CORE_DETAIL_PATTERNS = (
+    re.compile(r'(?:\d{2,4}年)?\d{1,2}月\d{1,2}[日号]'),
+    re.compile(r'[一二三四五六七八九十\d]{1,3}号(?:诊室|病房|窗口|柜台|包厢|宴会厅|大厅|桌|考场|手术室)'),
+    re.compile(r'(?:到|去|进了?|叫到|排到)?[一二三四五六七八九十\d]{1,3}号(?:诊室|病房|窗口|柜台|包厢|宴会厅|大厅|桌|考场|手术室)'),
+    re.compile(r'(?:捡|拾|翻|收|卖)(?:了?[一二三四五六七八九十\d年月天个半三两\s]*)?(?:垃圾|废品|破烂|废纸板|纸板|塑料瓶|旧纸箱|废纸|空瓶)'),
+    re.compile(r'(?:垃圾|废品|破烂|废纸板|纸板|塑料瓶|旧纸箱|废纸|空瓶)(?:堆|桶|站|巷|场|路|堆里|桶边|站旁)?(?:[一-龥\d]{0,8})?(?:死|断气|倒下|倒在)'),
+)
+
+_NON_CORE_DETAIL_PHRASES = (
+    '捡垃圾',
+    '垃圾桶',
+    '垃圾堆',
+    '垃圾站',
+    '翻垃圾',
+    '拾荒',
+    '捡破烂',
+    '捡废品',
+    '翻废品',
+    '废纸板',
+    '塑料瓶',
+    '旧纸箱',
+    '医院体检',
+    '体检中心',
+    '体检单',
+    '离婚登记',
+    '离婚日期',
+    '离婚证',
+    '离婚协议',
+    '婚姻登记',
+)
+
+
+def _candidate_non_core_detail_terms(text: str) -> list[str]:
+    raw = text or ''
+    terms: list[str] = []
+    seen: set[str] = set()
+    for pattern in _NON_CORE_DETAIL_PATTERNS:
+        for match in pattern.finditer(raw):
+            term = _compact_for_overlap(match.group(0))
+            if len(term) >= 2 and term not in seen:
+                seen.add(term)
+                terms.append(term)
+    compact = _compact_for_overlap(raw)
+    for phrase in _NON_CORE_DETAIL_PHRASES:
+        term = _compact_for_overlap(phrase)
+        if term in compact and term not in seen:
+            seen.add(term)
+            terms.append(term)
+    return terms
+
+
+def _non_core_detail_terms_for_prompt(source: str) -> list[str]:
+    return _dedupe_nested_terms(_candidate_non_core_detail_terms(source))[:10]
+
+
+def _non_core_detail_residue_issue(
+    rewritten: str,
+    source: str,
+    protected_terms: object = None,
+) -> str:
+    source_terms = _candidate_non_core_detail_terms(source)
+    if not source_terms:
+        return ''
+    rewritten_compact = _compact_for_overlap(rewritten)
+    protected = _normalize_protected_surface_terms(protected_terms)
+    retained = [
+        term
+        for term in source_terms
+        if term in rewritten_compact and not _is_protected_surface_term(term, protected)
+    ]
+    trash_markers = ('垃圾', '废品', '破烂', '拾荒', '废纸板', '纸板', '塑料瓶', '旧纸箱', '废纸', '空瓶')
+    source_has_trash_detail = any(any(marker in term for marker in trash_markers) for term in source_terms)
+    if source_has_trash_detail:
+        rewritten_terms = _candidate_non_core_detail_terms(rewritten)
+        for term in rewritten_terms:
+            if any(marker in term for marker in trash_markers) and not _is_protected_surface_term(term, protected):
+                retained.append(term)
+    retained = _dedupe_nested_terms(retained)
+    if not retained:
+        return ''
+    return (
+        '非核心细节照搬：保留原文日期/编号/场景细节“'
+        + '、'.join(retained[:6])
+        + '”，需要替换成同功能新细节，不能照搬原文的日期、诊室、死法或手续场景'
+    )
+
+
+def _alternate_month_day(month: int, day: int) -> str:
+    return f'{((month + 1) % 12) + 1}月{min(28, day + 3)}日'
+
+
+def _repair_non_core_detail_residue(rewritten: str, source: str) -> str:
+    """Replace literal non-core detail residue without changing plot causality."""
+    text = rewritten or ''
+    source_terms = _candidate_non_core_detail_terms(source)
+    if not text or not source_terms:
+        return text
+    source_compact = _compact_for_overlap(source)
+    for match in re.finditer(r'(\d{1,2})月(\d{1,2})[日号]', source or ''):
+        month = int(match.group(1))
+        day = int(match.group(2))
+        replacement = _alternate_month_day(month, day)
+        text = re.sub(rf'(?<!\d){month}月{day}[日号]', replacement, text)
+    if any('诊室' in term for term in source_terms):
+        text = re.sub(r'[一二三四五六七八九十\d]{1,3}号诊室', '4号取报告台', text)
+        text = re.sub(r'(?:到|去|进了?|叫到|排到)4号取报告台', '去4号取报告台', text)
+    if any('医院体检' in term or '体检中心' in term or '体检单' in term for term in source_terms):
+        text = text.replace('医院体检中心', '社区健康中心')
+        text = text.replace('医院体检', '社区复查')
+        text = text.replace('体检中心', '健康管理中心')
+        text = text.replace('体检单', '检查回执')
+    trash_markers = ('捡垃圾', '翻垃圾', '垃圾', '废品', '破烂', '拾荒', '废纸板', '纸板', '塑料瓶', '旧纸箱')
+    if any(marker in source_compact for marker in trash_markers):
+        alternatives = [
+            '我在地下通道发了三天高烧，第四天早上没再醒过来',
+            '我抱着行李在雨夜里摔下台阶，再也没爬起来',
+            '我被催债的人追到楼梯间，后脑磕在水泥台阶上',
+            '我在桥洞里冻了一整夜，天亮时呼吸已经断了',
+        ]
+        replacement_index = 0
+
+        def trash_replacement(_: re.Match) -> str:
+            nonlocal replacement_index
+            value = alternatives[replacement_index % len(alternatives)]
+            replacement_index += 1
+            return value
+
+        waste_words = r'垃圾|废品|破烂|废纸板|纸板|塑料瓶|旧纸箱|废纸|空瓶'
+        text = re.sub(
+            rf'[^。！？\n]{{0,40}}(?:{waste_words})[^。！？\n]{{0,40}}(?:死|倒|醒过来|断气)[^。！？\n]{{0,25}}',
+            trash_replacement,
+            text,
+        )
+        text = re.sub(
+            rf'[^。！？\n]{{0,40}}(?:死|倒|醒过来|断气)[^。！？\n]{{0,40}}(?:{waste_words})[^。！？\n]{{0,25}}',
+            trash_replacement,
+            text,
+        )
+        text = re.sub(
+            rf'[^。！？\n]{{0,30}}(?:捡|拾|翻|收|卖)[^。！？\n]{{0,25}}(?:{waste_words})[^。！？\n]{{0,35}}',
+            trash_replacement,
+            text,
+        )
+        text = (
+            text.replace('垃圾桶', '桥洞')
+            .replace('垃圾堆', '墙根')
+            .replace('垃圾站', '地下通道')
+            .replace('废纸板', '旧棉被')
+            .replace('塑料瓶', '空药瓶')
+            .replace('旧纸箱', '旧行李袋')
+        )
+    if any(term in source_terms for term in ('离婚证', '离婚登记', '离婚协议', '婚姻登记')):
+        text = text.replace('离婚证', '关系解除回执')
+        text = text.replace('离婚登记', '婚姻状态变更记录')
+        text = text.replace('婚姻登记', '关系状态登记')
+        text = text.replace('离婚协议', '解除关系文件')
+    return text
+
+
 def _name_map_adherence_issue(rewritten: str, source: str, name_map: object = None) -> str:
     """Flag wholesale divergence from the book's name_map.
 
     The model is supposed to rename each mapped character to its assigned new
     name (e.g. 陆有根→沈广田) consistently across all chapters. When it instead
     invents its own scheme (seen when DeepSeek over-expands), chapters drift
-    apart. Conservative: only fires when MANY mapped characters present in this
-    source did not get their assigned new name in the output — i.e. the whole
-    naming scheme diverged, not just one character left unnamed/referred by
-    relation. Single omissions never trip it."""
+    apart. Conservative: single omissions never trip it, but short chapters with
+    only two or three mapped characters still fail if most names drift."""
     if not isinstance(name_map, dict) or not name_map:
         return ''
     src = _compact_for_overlap(source)
     rw = _compact_for_overlap(rewritten)
-    if len(src) < 120:
-        return ''
     relevant = 0
     missing: list[tuple[str, str]] = []
     for orig, new in name_map.items():
@@ -1238,15 +1624,96 @@ def _name_map_adherence_issue(rewritten: str, source: str, name_map: object = No
             relevant += 1
             if new not in rw:
                 missing.append((orig, new))
-    if relevant < 4:
+    if relevant < 2:
         return ''
-    if len(missing) >= 3 and len(missing) >= relevant * 0.5:
+    if (
+        (relevant == 2 and len(missing) == 2)
+        or (relevant == 3 and len(missing) >= 2)
+        or (relevant >= 4 and len(missing) >= 3 and len(missing) >= relevant * 0.5)
+    ):
         pairs = '、'.join(f'{o}→{n}' for o, n in missing[:4])
         return (
             '人名未按对照表：原文角色“'
             + '、'.join(o for o, _ in missing[:4])
             + '”在成稿里没有用对照表指定的新名（应为 ' + pairs + ' 等），'
             '疑似自创人名，会和其它章节对不上；必须改用对照表中的指定新名'
+        )
+    return ''
+
+
+def _collapse_name_residue(text: str, names: list[str]) -> str:
+    """清理人名替换/生成产生的机器脏数据：连续重复整名（陆大富陆大富→陆大富）、
+    首字粘连（钱钱小八→钱小八）。这类残留来自 name_map 替换时新旧名重叠，或模型自创名时的
+    生成抖动，一眼可见、严重拉低专业度，做一道确定性后处理兜掉。"""
+    if not text:
+        return text
+    for name in sorted({n for n in names if n and len(n) >= 2 and len(set(n)) > 1}, key=len, reverse=True):
+        text = re.sub('(?:' + re.escape(name) + '){2,}', name, text)
+        rest = name[1:]
+        if rest:
+            text = re.sub(re.escape(name[0]) + '{2,}' + re.escape(rest), name, text)
+    return text
+
+
+def _repair_name_map_residue(rewritten: str, name_map: object = None) -> str:
+    text = rewritten or ''
+    if not text:
+        return text
+    new_names: list[str] = []
+    if isinstance(name_map, dict):
+        for old, new in sorted(name_map.items(), key=lambda item: len(str(item[0])), reverse=True):
+            old_name = str(old or '').strip()
+            new_name = str(new or '').strip()
+            if old_name and new_name and old_name != new_name:
+                text = text.replace(old_name, new_name)
+                new_names.append(new_name)
+    # 不只依赖 name_map：模型自创名(name_map 为空时)同样会产生重复脏数据，
+    # 用从文本自身识别出的人名一并清理。
+    names = new_names + _likely_name_terms(text)
+    return _collapse_name_residue(text, names)
+
+
+def _scene_fidelity_issue(rewritten: str, source: str, model_cfg: dict | None) -> str:
+    """用一次 LLM 判断成稿是否忠实改写了原文这场戏。洗稿允许换皮(改人名/地名/物件名/措辞/
+    叙述顺序)，但必须是同一场戏:同样的事件、人物关系、动作走向、因果。纯规则无法区分
+    "换皮改物件名"(应允许)与"换戏"(应拦)——后者(把原场景整体换成另一场戏 / 新增原文完全
+    没有的整段情节)是与客户精修最严重的差距，只能靠语义判断。任何异常都返回 ''(不阻塞交付)。"""
+    src = (source or '').strip()
+    rw = (rewritten or '').strip()
+    if not model_cfg or len(src) < 200 or len(rw) < 100:
+        return ''
+
+    def _clip(text: str) -> str:
+        return text if len(text) <= 2400 else text[:1700] + '\n……\n' + text[-600:]
+
+    messages = [
+        {'role': 'system', 'content': (
+            '你是洗稿忠实度审核员。洗稿允许改人名/地名/物件名/措辞、调整叙述顺序、删减次要细节(换皮),'
+            '但必须是同一场戏:同样的核心事件、人物关系、动作走向与因果。'
+            '只输出一个 JSON:{"faithful": true 或 false, "reason": "一句话"}。'
+            '仅当成稿把原文这场戏整体换成了另一场戏、或新增了原文完全没有的整段情节/场景时才判 faithful=false;'
+            '只是换皮、改措辞、调整顺序、删减细节一律 faithful=true。拿不准一律判 true。'
+        )},
+        {'role': 'user', 'content': (
+            f'【原文】\n{_clip(src)}\n\n【洗稿成稿】\n{_clip(rw)}\n\n判断成稿是否忠实于原文这场戏。'
+        )},
+    ]
+    try:
+        raw = one_shot(model_cfg, messages, temperature=0.0)
+    except Exception:
+        return ''
+    match = re.search(r'\{.*\}', raw or '', re.S)
+    if not match:
+        return ''
+    try:
+        verdict = json.loads(match.group(0))
+    except Exception:
+        return ''
+    if verdict.get('faithful') is False:
+        reason = str(verdict.get('reason') or '').strip().replace('\n', ' ')[:80]
+        return (
+            f'跑题换戏：成稿疑似把原文这场戏改成了别的内容（{reason}），'
+            '必须回到原文本场戏忠实改写，不许新增/替换原文没有的情节、场景或人物'
         )
     return ''
 
@@ -1293,6 +1760,19 @@ _AI_CLICHE_PHRASES = (
     '眸光一闪',
     '嘴角微扬',
     '不动声色地',
+    '神色复杂',
+    '眼神复杂',
+    '眼神一黯',
+    '意味深长',
+    '不置可否',
+    '若有所思',
+    '勾唇一笑',
+    '心如刀绞',
+    '五味杂陈',
+    '百感交集',
+    '不容置疑',
+    '眼底深处',
+    '幽幽地',
 )
 _OPENING_WORDY_MARKERS = (
     '昏黄', '细碎', '冰冷', '斑驳', '浓重', '压抑', '细密', '滚烫',
@@ -1509,6 +1989,7 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
             'overlap4': 0,
             'opening_overlap': 0,
             'structure_similarity': 0,
+            'opening_beat_similarity': 0,
             'longest_common_run': 0,
             'self_distinct4': 0,
             'repeated_phrases': [],
@@ -1522,6 +2003,7 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
         _compact_for_overlap(source)[:260],
     )
     structure_similarity = _structure_similarity(rewritten, source)
+    opening_beat_similarity = _opening_beat_similarity(rewritten, source)
     longest_run = _longest_common_substring_len(rewritten, source)
     self_distinct4 = _distinct_ngram_ratio(rewritten, 4)
     repeated_phrases = _repeated_internal_phrases(rewritten)
@@ -1529,10 +2011,13 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
     score = 100
     issues: list[str] = []
     max_length_ratio = _max_rewrite_length_ratio(source_len)
+    # 严重超标红线收紧并按档相对 max：短/中章(实测最易注水)≈1.22 即强制重试压回篇幅，
+    # 长章保留略宽的容忍(对齐"长章可稍长"的既有策略)。客户精修通常更紧，>红线多半在加戏。
+    severe_over_ratio = max(1.22, max_length_ratio + 0.04)
     if length_ratio < 0.80:
         issues.append(f'篇幅过短：输出只有原文 {length_ratio:.0%}，像摘要而不是洗稿')
         score -= 12
-    elif length_ratio > 1.35:
+    elif length_ratio > severe_over_ratio:
         # 严重超标 = 几乎一定新增了情节/续写（忠实度红线），强制重试压回原文长度
         issues.append(
             f'篇幅过长（严重超标）：输出达到原文 {length_ratio:.0%}，疑似新增情节或替原文续写，'
@@ -1560,6 +2045,11 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
             f'结构相似：段落形状相似度 {structure_similarity:.0%}，建议压到 60% 以下；需要重排信息释放、事件顺序和段落长短'
         )
         score -= min(16, 6 + int((structure_similarity - REWRITE_STRUCTURE_RETRY_THRESHOLD) * 40))
+
+    beat_issue = _opening_beat_issue(rewritten, source)
+    if beat_issue:
+        issues.append(beat_issue)
+        score -= 14
 
     if longest_run >= REWRITE_LONG_COMMON_RUN_RETRY_THRESHOLD:
         issues.append(f'连续表达保留过长：最长公共片段约 {longest_run} 字，需打散重写')
@@ -1622,6 +2112,11 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
         issues.append(surface_issue)
         score -= 14
 
+    detail_issue = _non_core_detail_residue_issue(rewritten, source, protected_terms)
+    if detail_issue:
+        issues.append(detail_issue)
+        score -= 16
+
     name_map_issue = _name_map_adherence_issue(rewritten, source, name_map)
     if name_map_issue:
         issues.append(name_map_issue)
@@ -1660,6 +2155,7 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
         'overlap4': round(overlap, 4),
         'opening_overlap': round(opening_overlap, 4),
         'structure_similarity': round(structure_similarity, 4),
+        'opening_beat_similarity': round(opening_beat_similarity, 4),
         'longest_common_run': longest_run,
         'self_distinct4': round(self_distinct4, 4),
         'repeated_phrases': [
@@ -1698,7 +2194,19 @@ def _max_rewrite_length_ratio(source_len: int) -> float:
 
 
 def _has_structure_issue(issues: list[str] | None) -> bool:
-    return any('结构相似' in item for item in (issues or []))
+    return any('结构相似' in item or '叙述骨架照搬' in item for item in (issues or []))
+
+
+def _has_opening_beat_issue(issues: list[str] | None) -> bool:
+    return any('叙述骨架照搬' in item for item in (issues or []))
+
+
+def _has_non_core_detail_issue(issues: list[str] | None) -> bool:
+    return any('非核心细节照搬' in item for item in (issues or []))
+
+
+def _has_name_map_issue(issues: list[str] | None) -> bool:
+    return any('人名未按对照表' in item for item in (issues or []))
 
 
 def _has_length_issue(issues: list[str] | None) -> bool:
@@ -1708,8 +2216,10 @@ def _has_length_issue(issues: list[str] | None) -> bool:
 def _has_rewrite_shape_issue(issues: list[str] | None) -> bool:
     markers = (
         '表层换皮不足',
+        '非核心细节照搬',
         '内部重复',
         '结构相似',
+        '叙述骨架照搬',
         '表达重合过高',
         '连续表达保留过长',
         '开头切入太像',
@@ -1734,14 +2244,37 @@ def _candidate_quality_is_better(
         return True
     current_structure = float(current_quality.get('structure_similarity') or 0)
     candidate_structure = float(candidate_quality.get('structure_similarity') or 0)
+    current_beats = float(current_quality.get('opening_beat_similarity') or 0)
+    candidate_beats = float(candidate_quality.get('opening_beat_similarity') or 0)
     current_overlap = float(current_quality.get('overlap4') or 0)
     candidate_overlap = float(candidate_quality.get('overlap4') or 0)
+    candidate_length_ratio = len((candidate_rewritten or '').strip()) / max(1, len((source or '').strip()))
+    current_length_ratio = len((current_rewritten or '').strip()) / max(1, len((source or '').strip()))
+    if (
+        (_has_non_core_detail_issue(current_issues) or _has_name_map_issue(current_issues))
+        and not _has_non_core_detail_issue(candidate_issues)
+        and not _has_name_map_issue(candidate_issues)
+        and candidate_length_ratio >= 0.78
+        and candidate_overlap <= max(current_overlap + 0.16, REWRITE_OVERLAP_RETRY_THRESHOLD)
+        and (
+            candidate_structure <= current_structure + 0.05
+            or (
+                (candidate_quality.get('score') or 0) >= (current_quality.get('score') or 0) + 8
+                and candidate_structure <= 0.78
+            )
+        )
+    ):
+        return True
+    if _has_opening_beat_issue(candidate_issues) and not _has_opening_beat_issue(current_issues):
+        return False
+    if _has_opening_beat_issue(candidate_issues) and candidate_beats > current_beats + 0.02:
+        return False
+    if _has_non_core_detail_issue(candidate_issues) and not _has_non_core_detail_issue(current_issues):
+        return False
     if _has_structure_issue(candidate_issues) and candidate_structure > current_structure + 0.02:
         return False
     if _has_length_issue(candidate_issues) and not _has_length_issue(current_issues):
         return False
-    candidate_length_ratio = len((candidate_rewritten or '').strip()) / max(1, len((source or '').strip()))
-    current_length_ratio = len((current_rewritten or '').strip()) / max(1, len((source or '').strip()))
     if candidate_length_ratio < 0.85 and current_length_ratio >= 0.85:
         return False
     if candidate_length_ratio > _max_rewrite_length_ratio(len((source or '').strip())) and current_length_ratio <= _max_rewrite_length_ratio(len((source or '').strip())):
@@ -1789,6 +2322,7 @@ def _quality_retry_instruction(
     source_len: int,
     attempt: int = 1,
     strategy_hint: str = '',
+    beat_order_hint: str = '',
 ) -> str:
     issue_text = '；'.join(issues)
     has_short_issue = _has_length_issue(issues) and any('过短' in item for item in issues)
@@ -1829,6 +2363,33 @@ def _quality_retry_instruction(
             '例如原文或问题里出现“马威”，就不要继续写“下马威”，改成“当众压气焰”“给难堪”等不同字面的表达；'
             '常见辱骂词、动物名、绰号、神怪称谓和固定物件名也要换成同义不同字面的说法。'
         )
+    if '非核心细节照搬' in issue_text:
+        surface_line += (
+            '\n非核心细节修正：质量问题引号里的日期、编号、诊室、体检地点、死法、手续场景都必须替换。'
+            '保留剧情功能即可：例如“某天办离婚手续”可以换成另一日期或另一份登记记录；'
+            '“2号诊室/医院体检”可以换成体检中心叫号、护士站、化验窗口或其他同功能场景；'
+            '“捡垃圾死”可以换成同样凄惨但不同字面的死法。核心因果不变，表层细节必须变。'
+            '禁止把“捡垃圾”改成“捡三天垃圾/翻废品”，禁止继续出现原日期，也不要写“距离原日期还有几天”。'
+            '手续证据不要继续写“离婚证/离婚登记/离婚协议”，改成系统状态、关系解除回执、档案记录或签收单等新字面。'
+        )
+    if '叙述骨架照搬' in issue_text:
+        order_line = f'（上一版开场节拍顺序约为：{beat_order_hint}）' if beat_order_hint else ''
+        surface_line += (
+            '\n叙述骨架强制重排' + order_line + '：上一版几乎按原文这串节拍逐拍平移，这是本次最严重的问题。'
+            '本次必须把这串节拍的**出场顺序彻底打乱**：换一个起点节拍（例如先写死亡余波、旁人反应、身体异常或一件证据物件其中之一），'
+            '把“系统记录/日期/回忆/签字文件”这几拍**拆散后移、改由对白或物件触发**，不得再按原顺序一拍接一拍。'
+            '允许保留你已写好的爆点钩子句开场，但**钩子之后的正文同样要按打乱后的新顺序推进**——'
+            '不能钩子一换、正文又回到原节拍顺序（这正是上一版失败的根因）。'
+            '自检：若新稿前 8 句的事件功能顺序仍能和原文一一对上，即判为未通过，必须重写。'
+        )
+    if '跑题换戏' in issue_text:
+        surface_line += (
+            '\n忠实度修正（最高优先）：上一版把原文这场戏改成了别的内容/新增了原文没有的情节，这是严重错误。'
+            '本次必须**严格忠实改写原文 y 这一场戏**：同样的核心事件、人物、动作走向和因果，逐一对应原文已有内容；'
+            '只能换皮（改人名/地名/物件名/措辞、调整叙述顺序、删减次要细节），'
+            '**绝不允许新增原文没有的情节、场景、人物或对白，绝不允许把这场戏替换成另一场戏或另一个人的视角**。'
+            '钩子也只能取自本章原文已有内容。写到原文这场戏的结尾就收。'
+        )
     opening_line = ''
     if '开头过度精修' in issue_text:
         opening_line = (
@@ -1866,12 +2427,13 @@ def _quality_retry_instruction(
         '这次必须执行更强的结构重构：\n'
         '1. 不得沿用原文开头事件的同一动作顺序；若原文用高潮钩子开头，改从发现前因、旁人反应、证据物件、醒来后的身体反应或结果后的余波切入。\n'
         '2. 不得让前 10 段和原文前 10 段一一对应，至少重排 50% 的背景信息、心理解释、旁支动作和证据揭示位置。\n'
-        '3. 输出篇幅以本轮给出的字数上限为准，不能缩成梗概；如果上一版过短，必须补回动作、对白、环境、身体反应和情绪递进，而不是用说明文字凑字；如果上一版过长，必须合并重复信息。\n'
-        '4. 对白、心理描写、物件细节和句式节奏全部重写，不连续保留原文 8 字以上表达。\n'
-        '5. 如果提示叙事视角漂移，必须恢复原稿视角；第一人称原稿必须继续用“我”推进，不要把主角写成姓名旁观。\n'
-        '6. 禁止流水账，每 300-500 字至少做一次情绪推进或关系反转，用动作、对白、身体反应和细节把戏顶起来。\n'
-        '7. 分行分段要方便对比：对白单独成段，连续动作和反应合成 2-4 句自然段，不要整段糊住，也不要机械一句一段。\n'
-        '8. 仍然只输出一个 Markdown 三反引号代码块（```），代码块里只放最终洗稿正文，不要用 """ 包正文。'
+        '3. 非核心细节必须换掉：普通日期、诊室/窗口编号、体检地点、普通死法、手续场景、宴会厅/桌号等不能照搬，只保留其剧情功能。\n'
+        '4. 输出篇幅以本轮给出的字数上限为准，不能缩成梗概；如果上一版过短，必须补回动作、对白、环境、身体反应和情绪递进，而不是用说明文字凑字；如果上一版过长，必须合并重复信息。\n'
+        '5. 对白、心理描写、物件细节和句式节奏全部重写，不连续保留原文 8 字以上表达。\n'
+        '6. 如果提示叙事视角漂移，必须恢复原稿视角；第一人称原稿必须继续用“我”推进，不要把主角写成姓名旁观。\n'
+        '7. 禁止流水账，每 300-500 字至少做一次情绪推进或关系反转，用动作、对白、身体反应和细节把戏顶起来。\n'
+        '8. 分行分段要方便对比：对白单独成段，连续动作和反应合成 2-4 句自然段，不要整段糊住，也不要机械一句一段。\n'
+        '9. 仍然只输出一个 Markdown 三反引号代码块（```），代码块里只放最终洗稿正文，不要用 """ 包正文。'
     )
 
 
@@ -1883,6 +2445,29 @@ def _quality_retry_strategy(attempt: int, issues: list[str] | None = None) -> st
             '改从证据物件、旁人反应或结果余波切入，不能沿用原场景顺序；'
             '同时逐项替换残留锚点，称谓和辱骂词也要换成不同说法，并重排开头的信息释放。'
         )
+    if '结构相似' in issue_text and '表层换皮不足' in issue_text:
+        structural_surface_strategies = [
+            '这次同时修结构和残留锚点：先把质量问题引号里的残留词逐个列入禁用清单，再重排前 8 段功能；改从处分后果、旁人追问、关键证据被翻出或冲突余波切入，中段再回补原文前因，不能继续沿原场景顺序推进。',
+            '整章重新搭骨架：把原文的“提出指控/对方反驳/证据落桌/组织表态/旁人反应”拆开重组；至少一半信息改由对白交锋、物件细节或旁观者反应触发，所有残留锚点换成同功能新词。',
+            '换镜头和段落形状：先写结果压到人物身上，再倒回证据来源；长段拆短、短段合并，避免段落长度跟原文同步；残留词、场所、称谓、文件名必须换字面。',
+        ]
+        return structural_surface_strategies[(max(1, attempt) - 1) % len(structural_surface_strategies)]
+    if '篇幅过长' in issue_text and '表层换皮不足' in issue_text:
+        return (
+            '先压回原文长度，再修残留锚点：删掉原文没有的新增支线、重复解释、前世补写和续写收尾；'
+            '质量问题引号里的词逐个列为禁用锚点，换成同功能不同字面的新名字、新物件、新场所或新称谓，'
+            '不能为了替换锚点继续扩写新场景。'
+        )
+    if '篇幅过长' in issue_text and '非核心细节照搬' in issue_text:
+        return (
+            '先压回原文长度，再替换非核心细节：删新增桥段和注水铺陈，只保留原文已有因果；'
+            '日期、诊室、体检地点、手续证据和死法必须换成新细节，尤其“捡垃圾”不能改成“翻废品/废纸板/塑料瓶/拾荒”等近义场景。'
+        )
+    if '篇幅过短' in issue_text and '表层换皮不足' in issue_text:
+        return (
+            '先补齐缺失现场戏，再替换残留锚点：不要摘要式跳过处分、反应、对峙和收尾；'
+            '把原文每个剧情节点写成动作、对白、证据或身体反应，但文件名、场所、人群称呼和固定说法全部换成新字面。'
+        )
     if '开头过度精修' in issue_text:
         return '重写前200字：删形容词和华丽比喻，用短句先给动作、对白或冲突钩子；环境、心理和背景后移到正文中段。'
     if '开头钩子不足' in issue_text:
@@ -1891,12 +2476,25 @@ def _quality_retry_strategy(attempt: int, issues: list[str] | None = None) -> st
         return '先删环境氛围、命运总结和重复心理，把信息改成“动作推进 + 对白交锋 + 证据落地”；保持短剧短快爽。'
     if '内部重复' in issue_text:
         return '先删除循环短语和重复解释，把重复心理改成一次动作落地、一次对白交锋或一次证据揭示；保持原剧情节点，但每个信息只出现一次。'
+    if '非核心细节照搬' in issue_text:
+        return '先替换被指出的日期、编号、体检地点、死法和手续场景；保留它们承担的证据/冲突功能，但换成新的表层细节，再重排前半段信息释放。'
+    if '跑题换戏' in issue_text:
+        return ('严格忠实改写原文这场戏:同样的事件、人物、动作走向和因果，逐一对应原文已有内容，'
+                '只换皮(名字/物件/措辞/顺序)，绝不新增或替换原文没有的情节、场景、人物。')
+    if '叙述骨架照搬' in issue_text:
+        beat_starts = [
+            '从死亡/结局的余波切入（先写结果落在人物身上的那一瞬），再倒回证据与前因；'
+            '系统记录、日期、回忆、签字文件这几拍打散后移，绝不按原顺序平移。',
+            '从旁人反应或一句冲突对白切入，把原开场的记录/回忆/文件顺序拆成由对白和物件触发的零散信息，后半段再回补。',
+            '从身体异常/证据物件切入（先给可拍的异常细节），把日期与档案信息压到中段；前 8 句的事件功能顺序必须和原文错开。',
+        ]
+        return beat_starts[(max(1, attempt) - 1) % len(beat_starts)]
     if '表层换皮不足' in issue_text:
         return '先逐项替换质量问题中引号列出的残留锚点：人名换成新命名，物件/场所换成同功能新细节，称谓和辱骂词换成不同说法；再重排开头和信息释放，保留剧情功能但不沿用原场景顺序。'
     if '结构相似' in issue_text:
         structural_strategies = [
-            '整章重新排骨架：不要从原文第一动作开场，改从救人后的后果、旁人正在处理现场或关键物件异常切入，再分两次回补原文前因。',
-            '强制错位前 8 段功能：把身份揭露、救命关系、危险来源和主角判断分别换到不同段落位置，不能保留原文“醒来-观察-回忆-来人-递药”的顺序。',
+            '整章重新排骨架：不要从原文第一动作开场，改从结果余波、旁人反应、关键证据物件、对方失态或一句冲突对白切入，再分两次回补原文前因。',
+            '强制错位前 8 段功能：把身份关系、证据来源、旧事回忆、死亡原因和主角反击分别换到不同段落位置，不能保留原文第一场景到下一场景的推进顺序。',
         ]
         return structural_strategies[(max(1, attempt) - 1) % len(structural_strategies)]
     if '篇幅过短' in issue_text:
@@ -1941,8 +2539,13 @@ def _build_quality_retry_messages(
         f'{source_guard}'
         '禁止输出思考过程、解释、自检、风格描述。只输出一个 Markdown 三反引号代码块（```），代码块内只放最终洗稿正文，代码块外不要输出任何文字。'
     )
+    beat_order_hint = (
+        _opening_beat_order_hint(original_text)
+        if any('叙述骨架照搬' in item for item in issues)
+        else ''
+    )
     body_parts: list[str] = [
-        _quality_retry_instruction(issues, source_len, attempt, strategy_hint),
+        _quality_retry_instruction(issues, source_len, attempt, strategy_hint, beat_order_hint),
         '\n———————————————————\n',
     ]
     if analysis_block:
@@ -1971,6 +2574,16 @@ def _build_quality_retry_messages(
         body_parts.append(f'【剧情参考】\n{plot_hint.strip()}')
         body_parts.append('\n———————————————————\n')
     issue_text = '；'.join(issues)
+    if _has_structure_issue(issues) or '表达重合过高' in issue_text or '连续表达保留过长' in issue_text:
+        body_parts.append(
+            '【本轮必须换骨架】\n'
+            '先在内部列一个全新的 3-5 步叙述顺序，但不要输出提纲。'
+            '第一段禁止使用原文第一段的同一场景、同一动作、同一物件落点或同一句对白功能开头；'
+            '改从结果余波、旁人反应、证据物件、对方失态、身体异常或一句冲突对白切入。'
+            '中段把原文前 30% 的背景/证据/回忆拆到后文 2-4 个位置释放，避免“原文一段对应成稿一段”。'
+            '如果上一版已经多次结构相似，不要参考上一版措辞和段落，只按原文因果重新生成一版。'
+        )
+        body_parts.append('\n———————————————————\n')
     if _has_rewrite_shape_issue(issues):
         body_parts.append(
             '【上一版未达标稿件】\n'
@@ -1996,8 +2609,8 @@ def _resolve_quality_mode(raw: object = None) -> str:
 def _has_serious_rewrite_issue(issues: list[str] | None = None) -> bool:
     issues = issues or []
     issue_text = '；'.join(issues)
-    # 只对“底线类”问题重试：版权重合、视角漂移、人名/锚点换皮、严重结构相似、
-    # 内部重复、流水账（梗概化）。开头钩子等工艺偏好已移出，交给强模型自行把握。
+    # 底线类问题重试：版权重合、视角漂移、人名/锚点换皮、严重结构相似、内部重复、流水账。
+    # 开头钩子(短剧命门)实测强模型常把全书最大反差炸点删掉/平开，靠自觉不可靠，故重新纳入重试。
     serious_markers = (
         '输出格式失败',
         '格式失败',
@@ -2008,11 +2621,15 @@ def _has_serious_rewrite_issue(issues: list[str] | None = None) -> bool:
         '表达重合过高',
         '连续表达保留过长',
         '结构相似',
+        '叙述骨架照搬',
         '表层换皮不足',
+        '非核心细节照搬',
         '人名未按对照表',
         '叙事视角漂移',
         '内部重复',
         '流水账风险',
+        '开头钩子不足',
+        '跑题换戏',
     )
     return any(marker in issue_text for marker in serious_markers)
 
@@ -2023,30 +2640,43 @@ def _quality_retry_limit(mode: str, issues: list[str] | None = None) -> int:
         return 0
     # 严重超标(>135%，多半在加戏)给多一次重试，让低温压缩有机会把篇幅拉回。
     severe_over = any('严重超标' in item for item in issues)
+    needs_detail_structure_depth = _has_non_core_detail_issue(issues) and (
+        _has_structure_issue(issues) or any('表层换皮不足' in item for item in issues)
+    )
+    needs_structure_surface_depth = _has_structure_issue(issues) and any('表层换皮不足' in item for item in issues)
+    needs_length_surface_depth = _has_length_issue(issues) and any('表层换皮不足' in item for item in issues)
     if mode == 'deep':
         return 4
     if mode == 'auto':
-        return (2 if severe_over else 1) if _has_serious_rewrite_issue(issues) else 0
+        if not _has_serious_rewrite_issue(issues):
+            return 0
+        return 3 if needs_structure_surface_depth else 2 if severe_over or needs_detail_structure_depth or needs_length_surface_depth else 1
     if mode == 'balanced' and _has_customer_delivery_risk(issues):
-        return (2 if severe_over else 1) if _has_serious_rewrite_issue(issues) else 0
+        if not _has_serious_rewrite_issue(issues):
+            return 0
+        return 3 if needs_structure_surface_depth else 2 if severe_over or needs_detail_structure_depth or needs_length_surface_depth else 1
     return 0
 
 
 def _has_customer_delivery_risk(issues: list[str] | None) -> bool:
     """Issues worth one automatic rescue pass in the customer-facing flow."""
-    # 工艺类（开头精修/钩子、节奏拖沓、AI套话、篇幅）已降级为告警，不再自动重洗，
-    # 让强模型自由发挥；只对版权、结构、视角、换皮、流水账等底线类做一次补救。
+    # 节奏拖沓、AI套话仍降级为告警(只扣分不重洗)；但开头钩子(短剧命门)与跑题换戏(忠实度红线)
+    # 实测靠模型自觉不可靠、是与客户精修最大代差，故纳入一次补救重试。
     risk_markers = (
         '表达重合过高',
         '结构相似',
+        '叙述骨架照搬',
         '连续表达保留过长',
         '叙事视角漂移',
         '流水账风险',
         '简介式开头',
         '内部重复',
         '表层换皮不足',
+        '非核心细节照搬',
         '人名未按对照表',
         '严重超标',
+        '开头钩子不足',
+        '跑题换戏',
     )
     return any(any(marker in item for marker in risk_markers) for item in (issues or []))
 
@@ -2239,6 +2869,7 @@ def rewrite():
     novel_id = payload.get('novel_id')
     chapter_id = payload.get('chapter_id')
     genre_hint = (payload.get('genre_hint') or '').strip()
+    quality_failure_hint = (payload.get('quality_failure_hint') or '').strip()
 
     if not text:
         return jsonify({'error': 'text is required'}), 400
@@ -2309,6 +2940,7 @@ def rewrite():
         analysis_block,
         task=task,
         genre_hint=genre_hint,
+        quality_failure_hint=quality_failure_hint,
     )
     stream_chat_func = stream_chat
     score_rewrite_quality_base = score_rewrite_quality
@@ -2486,6 +3118,10 @@ def rewrite():
                         yield f"data: {json.dumps({'done': True, 'error': str(retry_error), 'format_error': True}, ensure_ascii=False)}\n\n"
                         return
 
+                rewritten = _repair_name_map_residue(
+                    _repair_non_core_detail_residue(rewritten, text),
+                    name_map,
+                )
                 quality = score_rewrite_quality_func(rewritten, text)
                 retry_count = 0
                 retry_limit = _quality_retry_limit(quality_mode, quality.get('issues') or [])
@@ -2514,6 +3150,10 @@ def rewrite():
                             message='正在质量复查并自动重洗，请稍候',
                             keep_rewritten=rewritten,
                             attempt=retry_count,
+                        )
+                        candidate_rewritten = _repair_name_map_residue(
+                            _repair_non_core_detail_residue(candidate_rewritten, text),
+                            name_map,
                         )
                         candidate_quality = score_rewrite_quality_func(candidate_rewritten, text)
                     except Exception as e:
@@ -3405,8 +4045,20 @@ def quality_score():
     rewritten = payload.get('rewritten') or ''
     if not source or not rewritten:
         return jsonify({'error': 'source and rewritten are required'}), 400
-    protected_terms = payload.get('protected_terms') or payload.get('keep_terms') or []
-    return jsonify(score_rewrite_quality(rewritten, source, protected_terms=protected_terms))
+    novel_id = payload.get('novel_id')
+    chapter_id = payload.get('chapter_id')
+    protected_terms = _normalize_protected_surface_terms(_coerce_string_list(
+        payload.get('protected_terms') or payload.get('keep_terms')
+    ))
+    analysis_data = _resolve_analysis_data(novel_id, chapter_id)
+    analysis_terms = _analysis_protected_terms(analysis_data)
+    if analysis_terms:
+        protected_terms = _normalize_protected_surface_terms(protected_terms + analysis_terms)
+    name_map = _analysis_name_map(analysis_data)
+    kwargs = {'protected_terms': protected_terms}
+    if name_map:
+        kwargs['name_map'] = name_map
+    return jsonify(score_rewrite_quality(rewritten, source, **kwargs))
 
 
 @v2_bp.route('/eval/import_zip', methods=['POST'])
