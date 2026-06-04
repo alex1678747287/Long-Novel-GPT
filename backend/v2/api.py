@@ -635,7 +635,12 @@ def _resolve_analysis_data(novel_id: str | None, chapter_id: str | None) -> dict
 def _analysis_protected_terms(analysis: dict | None) -> list[str]:
     if not analysis:
         return []
-    return _normalize_protected_surface_terms(_coerce_string_list(analysis.get('keep_terms')))
+    terms = _coerce_string_list(analysis.get('keep_terms'))
+    # 把 place_map/term_map 的"统一新名"也纳入豁免:它们是要跨章保持一致的名,
+    # 不应被 _surface_anchor_issue 反照搬门要求再换皮(否则与确定性替换互相打架)。
+    terms += list(_analysis_place_map(analysis).values())
+    terms += list(_analysis_term_map(analysis, 'term_map').values())
+    return _normalize_protected_surface_terms(terms)
 
 
 def _analysis_name_map(analysis: dict | None) -> dict:
@@ -647,6 +652,35 @@ def _analysis_name_map(analysis: dict | None) -> dict:
     if not isinstance(nm, dict):
         return {}
     return {str(k).strip(): str(v).strip() for k, v in nm.items() if str(k).strip() and str(v).strip()}
+
+
+def _analysis_term_map(analysis: dict, key: str) -> dict:
+    if not isinstance(analysis, dict):
+        return {}
+    raw = analysis.get(key)
+    if not isinstance(raw, dict):
+        return {}
+    return {str(k).strip(): str(v).strip() for k, v in raw.items()
+            if str(k).strip() and str(v).strip() and str(k).strip() != str(v).strip()}
+
+
+def _analysis_place_map(analysis: dict | None) -> dict:
+    """虚构地名 原名→新名(analyzer 已抽取并注入 prompt,但过去落库无强制)。"""
+    return _analysis_term_map(analysis, 'place_map')
+
+
+def _analysis_replacement_map(analysis: dict | None) -> dict:
+    """跨章一致性的**确定性替换**总表:地名/术语 + 人名(人名优先、覆盖冲突)。
+    用于落库前 _repair_name_map_residue,把"地点/势力/标志术语"也像人名一样跨章锁死,
+    不再只靠 prompt 软提示——这是"靖王府跨章被洗成定北/镇北王府"漂移的根治。
+    人名最后合并以获得最高优先级;_repair 内部按 key 长度倒序替换,避免子串误替。"""
+    if not isinstance(analysis, dict):
+        return {}
+    merged: dict = {}
+    merged.update(_analysis_place_map(analysis))
+    merged.update(_analysis_term_map(analysis, 'term_map'))  # 预留:analyzer 产出后自动生效
+    merged.update(_analysis_name_map(analysis))  # 人名优先
+    return merged
 
 
 def _resolve_quality_protected_terms(novel_id: str | None, chapter_id: str | None) -> list[str]:
@@ -1211,17 +1245,21 @@ _SURFACE_ANCHOR_STOP_TERMS = {
     '王妃', '适婚', '路费', '学费', '生活费', '开学', '宿舍', '码头',
     '申时末', '时末才', '隔半盏茶', '回府',
     '婚礼', '典礼', '新婚', '离婚', '轮椅', '满堂', '安排', '安排得',
+    '圆房', '洞房', '同房', '圆了房',  # 核心剧情事件词(同 婚礼/离婚)，不是该换皮的命名
 }
 _NAME_TRAILING_CONTEXT_CHARS = set(
     '在有到从往向把被给让对看听说问答喊叫骂笑哭想知觉醒睡撑坐站走跑'
     '推拉拽按摸盯瞪瞥皱低抬回转拎端倒递喝放落摔砸跪扶抱攥握'
     '吃接塞带付学会妈姑愣苦养劈书桌馆园院厅房门口货病话'
     '心手头眼脸身门屋桌床窗碗药酒茶汤水光声影风雨雪山家府院厅'
+    # 动词短语/题材词的常见收尾字：避免"于凑够/舒展开/石斑/龙胆斑/黄鳝笼"等被当人名误判为换皮锚点
+    '够开展起完出成凑拢齐斑拾捡攒逮钓拽笼篓网'
 )
 _NAME_SECOND_CHAR_FALSE_POSITIVES = set(
     '开关回转看听说问答喊叫骂哭笑想知觉醒睡坐站走跑进出入来去'
     '拿接塞带给做吃喝救治伤疼痛扶抱攥握推拉拽按摸盯瞪低抬'
     '学会承认绷愣苦养劈付间围边身地饭'
+    '鳝鱼虾蟹龟鳖鳗鲈'  # "黄鳝/黄鱼"等水产域词:黄是常见姓,但后接水产字=渔猎对象而非人名
 )
 _SURFACE_OBJECT_SUFFIXES = set(
     '屋房宅院府厅堂楼阁铺馆庙寺宫殿门窗床桌椅案帘纸墙梁'
@@ -1258,6 +1296,10 @@ _GENERIC_SCENE_TERMS = {
     '灶台', '饭桌', '餐桌', '炕头', '床边', '门口', '屋里', '屋外', '屋内', '店里',
     '铺子', '车上', '车里', '卫生间', '洗手间', '浴室', '诊室', '病区', '护士站',
     '大堂', '大门', '正厅', '偏厅', '内室', '耳房', '厢房', '正房', '后堂',
+    # 通用自然/场所/工具词与量词碎片：换不换皮意义有限，过去被误当锚点(阳光/大街/一杯茶/剪刀)
+    '阳光', '月光', '灯光', '日光', '烛光', '火光',
+    '大街', '街边', '街上', '街口', '条街', '马路', '路边', '路口', '巷口', '桥头',
+    '杯茶', '碗茶', '盏茶', '边茶', '剪刀', '菜刀', '锄头', '扁担', '篮子', '筐子',
 }
 
 

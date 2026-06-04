@@ -52,6 +52,9 @@ ANALYZE_PROMPT = """你是一位专业网文洗稿编辑助手。我会给你一
   "place_map": {
     "原地名1": "新地名1"
   },
+  "term_map": {
+    "原势力/组织/家族/称谓/标志专名": "统一新写法"
+  },
   "keep_terms": ["羊脂玉佩", "青瓷药壶"],
   "character_profiles": [
     {
@@ -77,7 +80,8 @@ ANALYZE_PROMPT = """你是一位专业网文洗稿编辑助手。我会给你一
 - 本次给你的可能只是全书的一部分章节或采样片段；请只对你实际看到的人名做映射，不要臆造没出现过的人物，但凡看到的都不要遗漏。
 - name_map 的 key 用原文中出现的全名形式（"林轩"而不是"林"）
 - place_map 只列**可换的虚构地名**，真实地名（上京、江市）保留不放进表
-- keep_terms 列出**关键道具/招式名/标志台词关键词**——这些洗稿时必须保留
+- term_map 列**会反复出现、需要全书统一改写**的非人名专名：势力/组织/门派/家族（如"汝阳侯府""赵家军"）、特殊称谓、标志性专有物件名等→给一个统一新写法。**term_map 与 keep_terms 互斥**：要统一改名的放 term_map，要原样保留不改的放 keep_terms，同一个词不要同时出现在两边。设这张表是为了防止同一个势力/称谓在不同章被洗成不同名字。
+- keep_terms 列出**关键道具/招式名/标志台词关键词**——这些洗稿时必须原样保留（不改）
 - character_profiles 用于人物表；每个角色写清原名、新名、身份、性格、禁改动机
 - worldview 写清时代背景/世界观/权力结构
 - plot_lines 写主线情节线，只保留不能乱改的主线
@@ -237,6 +241,10 @@ def _merge_results(acc: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
     for k, v in (new.get('place_map') or {}).items():
         if k not in place_map:
             place_map[k] = v
+    term_map = dict(acc.get('term_map') or {})
+    for k, v in (new.get('term_map') or {}).items():
+        if k not in term_map:
+            term_map[k] = v
     keep_terms = _merge_unique_strings(
         _string_list(acc.get('keep_terms')),
         _string_list(new.get('keep_terms')),
@@ -244,6 +252,7 @@ def _merge_results(acc: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
     return {
         'name_map': name_map,
         'place_map': place_map,
+        'term_map': term_map,
         'keep_terms': keep_terms,
         'character_profiles': _merge_unique_dicts(
             _dict_list(acc.get('character_profiles')),
@@ -283,6 +292,7 @@ def _run_one_pass(model_cfg: dict, sample: str) -> dict[str, Any]:
     return {
         'name_map': dict(parsed.get('name_map') or {}),
         'place_map': dict(parsed.get('place_map') or {}),
+        'term_map': dict(parsed.get('term_map') or {}),
         'keep_terms': _string_list(parsed.get('keep_terms')),
         'character_profiles': _dict_list(parsed.get('character_profiles')),
         'worldview': str(parsed.get('worldview') or ''),
@@ -358,6 +368,7 @@ def analyze_novel(
         return {
             'name_map': {},
             'place_map': {},
+            'term_map': {},
             'keep_terms': [],
             'character_profiles': [],
             'worldview': '',
@@ -397,6 +408,7 @@ def format_for_rewrite_prompt(analysis: dict[str, Any]) -> str:
         return ''
     name_map = analysis.get('name_map') or {}
     place_map = analysis.get('place_map') or {}
+    term_map = analysis.get('term_map') or {}
     keep_terms = _string_list(analysis.get('keep_terms'))
     character_profiles = _dict_list(analysis.get('character_profiles'))
     worldview = str(analysis.get('worldview') or '').strip()
@@ -409,6 +421,7 @@ def format_for_rewrite_prompt(analysis: dict[str, Any]) -> str:
     if not (
         name_map
         or place_map
+        or term_map
         or keep_terms
         or character_profiles
         or worldview
@@ -459,6 +472,10 @@ def format_for_rewrite_prompt(analysis: dict[str, Any]) -> str:
     if place_map:
         lines.append('· 地名映射：')
         for orig, new in place_map.items():
+            lines.append(f'    {orig} → {new}')
+    if term_map:
+        lines.append('· 势力/称谓/专名映射（全书统一改写，出现原名一律换新名）：')
+        for orig, new in term_map.items():
             lines.append(f'    {orig} → {new}')
     if keep_terms:
         lines.append('· 必须原样保留的关键词：' + '、'.join(keep_terms))

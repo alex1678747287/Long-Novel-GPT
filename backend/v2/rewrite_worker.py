@@ -556,9 +556,12 @@ def _persist_direct_rewrite_result(
         payload.get("chapter_id"),
     )
     name_map = api._analysis_name_map(analysis_data)
+    # 确定性替换用"地名+术语+人名"合并表(跨章一致性):把地点/势力/标志术语也像人名一样锁死,
+    # 不再只靠 prompt 软提示。质量门仍只用人名表(避免抬高重洗率)。
+    replacement_map = api._analysis_replacement_map(analysis_data)
     repaired = api._repair_name_map_residue(
         api._repair_non_core_detail_residue(rewritten, source),
-        name_map,
+        replacement_map,
     )
     if repaired != rewritten:
         rewritten = repaired
@@ -577,7 +580,7 @@ def _persist_direct_rewrite_result(
     # 旧稿可能是修复前留下的、带替换脏数据(重复人名等)的版本；保留旧稿前先清一次，
     # 避免"新候选打不过旧脏稿→保留旧脏稿"把脏数据永久留在章节里。
     if existing_rewritten:
-        cleaned_existing = api._repair_name_map_residue(existing_rewritten, name_map)
+        cleaned_existing = api._repair_name_map_residue(existing_rewritten, replacement_map)
         if cleaned_existing != existing_rewritten:
             existing_rewritten = cleaned_existing
             existing_quality = score_func(existing_rewritten, source)
@@ -761,9 +764,10 @@ def _run_segmented_job(
         payload.get("chapter_id"),
     )
     name_map = api._analysis_name_map(analysis_data)
+    replacement_map = api._analysis_replacement_map(analysis_data)
     merged = api._repair_name_map_residue(
         api._repair_non_core_detail_residue(merged, source),
-        name_map,
+        replacement_map,
     )
     score_func = _score_func_for_payload(payload)
     protected_terms = api._resolve_quality_protected_terms(
@@ -780,7 +784,7 @@ def _run_segmented_job(
         score_func,
     )
     if existing_rewritten:
-        cleaned_existing = api._repair_name_map_residue(existing_rewritten, name_map)
+        cleaned_existing = api._repair_name_map_residue(existing_rewritten, replacement_map)
         if cleaned_existing != existing_rewritten:
             existing_rewritten = cleaned_existing
             existing_quality = score_func(existing_rewritten, source)

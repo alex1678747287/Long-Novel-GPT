@@ -2928,6 +2928,50 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertTrue(any("表层换皮不足" in item for item in score["issues"]))
         self.assertIn("木屋", "；".join(score["issues"]))
 
+    def test_replacement_map_enforces_cross_chapter_place_and_term_consistency(self):
+        # 跨章一致性:地名/势力/专名也像人名一样落库前确定性替换,不再只靠 prompt 软提示。
+        analysis = {
+            "name_map": {"李清": "苏婉"},
+            "place_map": {"安王府": "靖王府", "兰诺国": "景澜国"},
+            "term_map": {"赵家军": "周家军"},
+            "keep_terms": ["玉佩"],
+        }
+        rmap = api._analysis_replacement_map(analysis)
+        self.assertEqual(rmap.get("安王府"), "靖王府")
+        self.assertEqual(rmap.get("赵家军"), "周家军")
+        self.assertEqual(rmap.get("李清"), "苏婉")
+        # 某章模型没按对照表(地名/势力写成原名)→ 落库前强制统一
+        text = "李清走进安王府，赵家军已在兰诺国边境。"
+        fixed = api._repair_name_map_residue(text, rmap)
+        self.assertEqual(fixed, "苏婉走进靖王府，周家军已在景澜国边境。")
+        # 统一后的新地名/新专名进入 surface 豁免,不被反照搬门当残留
+        protected = api._analysis_protected_terms(analysis)
+        for new in ("靖王府", "景澜国", "周家军"):
+            self.assertIn(new, protected)
+
+    def test_surface_anchor_precision_rejects_false_positive_categories(self):
+        # R9 精度:动词短语/题材域词/通用词/量词碎片/核心剧情词 都不该被当成"换皮不足"锚点。
+        # 原文与成稿都含这些词(人名已换),它们不应出现在 retained 锚点里。
+        source = (
+            "黄鳝在水里舒展开身子，他于凑够了钱去买石斑和龙胆斑。"
+            "阳光照在大街上，他端着一杯茶坐在街边，手里攥着剪刀。"
+            "婚礼当天他们圆房了。李大富走进屋。"
+        ) * 6
+        rewritten = (
+            "黄鳝在水里舒展开身子，他于凑够了钱去买石斑和龙胆斑。"
+            "阳光照在大街上，他端着一杯茶坐在街边，手里攥着剪刀。"
+            "婚礼当天他们圆房了。周永发走进屋。"  # 人名 李大富→周永发 已换
+        ) * 6
+        retained = api._retained_surface_anchors(source, rewritten)
+        for fp in ['于凑够', '舒展开', '石斑', '龙胆斑', '黄鳝', '阳光', '大街',
+                   '条街', '杯茶', '剪刀', '圆房']:
+            self.assertNotIn(fp, retained, f"{fp} 不应被判为换皮锚点(误报)")
+        # 真锚点仍必须识别(防过度白名单)
+        for real in ['木屋', '药壶', '玉佩', '九连环', '青瓷', '烫金']:
+            self.assertTrue(api._is_surface_anchor(real), f"{real} 仍应是锚点")
+        for name in ['林婉清', '王素芬']:
+            self.assertTrue(api._looks_like_name(name), f"{name} 仍应是人名")
+
     def test_quality_score_does_not_treat_generic_scene_rooms_as_surface_anchors(self):
         # 通用房间/场所词（厨房/堂屋/宴会厅/客厅）不是人名也不是独特物件，
         # 换不换皮对去重意义有限；过去它们以"房/厅/屋/堂"结尾被当强锚点导致过度告警。
