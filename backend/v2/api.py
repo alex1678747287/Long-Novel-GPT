@@ -2573,11 +2573,16 @@ def _quality_retry_instruction(
         )
     if '对话占比偏低' in issue_text:
         surface_line += (
-            '\n对话化修正（最高优先）：上一版对话太少/把原稿对白改成了叙述。短剧靠对白推进——'
-            '把能说出口的转述、质问、解释、心理判断、信息交代统统改成带引号直接对白，'
-            '让全章对白篇幅占到 ≥60%；原文本就是对白的地方必须保留为对白、不许改成叙述。'
-            '但只把原文 y 已有的事件、人物、台词对话化（转述→对话的等量换形），'
-            '**绝不新增原文没有的情节、角色或对白**，也不许为凑对话拉长篇幅。'
+            '\n对话化重写（最高优先，本次必须做到对白篇幅≥60%）：短剧靠对白推进，上一版叙述太多。'
+            '用下面的短剧标准手法，把叙述/回忆/铺垫/身世/心理活动**改成对话呈现**（信息不变、不新增情节）：\n'
+            '  1) 身世/前情/恩怨 → 让角色**当众质问、控诉、嘲讽、回怼**地说出来。'
+            '例：叙述"上辈子我伺候瘫痪婆婆二十年，婆婆死后他拿着早办好的离婚证把我赶出门"'
+            '→对白"「我伺候你瘫痪的妈整整二十年，端屎端尿。」我盯着他，「她一咽气，你就拿着早办好的离婚证，把我扫地出门。」"\n'
+            '  2) 心理判断/内心 OS → 用**带引号的内心独白**或一句台词带出，例"我心里冷笑：『这次轮到你们求我了。』"\n'
+            '  3) 信息交代/设定 → 让**原文已有的角色互相说出来**（一问一答），别用旁白讲。\n'
+            '  4) 原文本就是对白的地方必须保留为对白，绝不改成叙述。\n'
+            '硬要求：全章引号内对白字数占≥60%；只把原文 y 已有的事件/人物/信息对话化，'
+            '**绝不新增原文没有的情节、角色或事件**，也不许为凑对话拉长篇幅（仍≤原文长度）。'
         )
     opening_line = ''
     if '开头过度精修' in issue_text:
@@ -2838,16 +2843,18 @@ def _quality_retry_limit(mode: str, issues: list[str] | None = None) -> int:
     )
     needs_structure_surface_depth = _has_structure_issue(issues) and any('表层换皮不足' in item for item in issues)
     needs_length_surface_depth = _has_length_issue(issues) and any('表层换皮不足' in item for item in issues)
+    # 对话占比偏低=客户硬需求(成品需≥60%),模型单次重试常不到位,多给重试机会逼它对话化。
+    needs_dialogue_depth = any('对话占比偏低' in item for item in issues)
     if mode == 'deep':
         return 4
     if mode == 'auto':
         if not _has_serious_rewrite_issue(issues):
             return 0
-        return 3 if needs_structure_surface_depth else 2 if severe_over or needs_detail_structure_depth or needs_length_surface_depth else 1
+        return 3 if (needs_structure_surface_depth or needs_dialogue_depth) else 2 if severe_over or needs_detail_structure_depth or needs_length_surface_depth else 1
     if mode == 'balanced' and _has_customer_delivery_risk(issues):
         if not _has_serious_rewrite_issue(issues):
             return 0
-        return 3 if needs_structure_surface_depth else 2 if severe_over or needs_detail_structure_depth or needs_length_surface_depth else 1
+        return 3 if (needs_structure_surface_depth or needs_dialogue_depth) else 2 if severe_over or needs_detail_structure_depth or needs_length_surface_depth else 1
     return 0
 
 
