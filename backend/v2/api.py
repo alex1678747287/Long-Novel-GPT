@@ -208,7 +208,7 @@ user:
 3. 前 200 字要短、准、狠，少用形容词、比喻和长修饰链；如果原稿前段有可用对白，成稿第一句尽量直接上带引号对白，不要先写“沉闷空气、刺骨凉意、死一般寂静”式氛围铺垫。
 4. 背景信息拆散到后文，用 2-4 次短回补穿插在动作和对白之间；前 10 个自然段不能对应原文前 10 段。
 5. 不得逐句换词，不得按原段落一一平移；至少 40% 的背景、心理、旁支动作和证据揭示要换位置。
-6. 对白只保留冲突功能，不保留说法；问答顺序、语气强弱、停顿和反击节奏都要重写。
+6. 对白：问答顺序、语气、停顿、反击节奏可重排；自然口语和标志性/关键数字台词允许按原话保留。
 7. 不连续保留原文 8 字以上表达；不要出现像“换了名字的原文”的段落。
 8. 非核心细节必须替换：“捡垃圾死”“医院体检”“2号诊室”“6月12日办手续”等不能原样沿用；改成同功能新死法、新科室、新日期或新编号，但不改核心因果和人物关系。
 
@@ -1036,6 +1036,25 @@ def _overlap_4gram(a: str, b: str) -> float:
     return len(a_grams & b_grams) / min(len(a_grams), len(b_grams))
 
 
+_DIALOGUE_RE = re.compile(r'[“「『][^”」』]*[”」』]')
+
+
+def _strip_dialogue(text: str) -> str:
+    """去掉引号内对白,只留叙述。对白(尤其自然童言/标志台词/关键数字台词)本就该按原话保留,
+    不应被 4-gram 重合当成'贴着原文抄'来罚——客户精修同样保留这些台词。"""
+    return _DIALOGUE_RE.sub('', text or '')
+
+
+def _narration_overlap_4gram(rewritten: str, source: str) -> float:
+    """只衡量'叙述'的 4-gram 重合(剔除引号内对白)。叙述残量过短(<80字,统计噪声大,
+    或有人把抄袭塞进假引号)时回退到全文 overlap,宁可保守也不放过真照抄。"""
+    src_narr = _compact_for_overlap(_strip_dialogue(source))
+    rw_narr = _compact_for_overlap(_strip_dialogue(rewritten))
+    if len(src_narr) < 80 or len(rw_narr) < 80:
+        return _overlap_4gram(rewritten, source)
+    return _overlap_4gram(_strip_dialogue(rewritten), _strip_dialogue(source))
+
+
 REWRITE_OVERLAP_EXCELLENT_TARGET = 0.15
 REWRITE_OVERLAP_DELIVERABLE_TARGET = 0.22
 REWRITE_OVERLAP_TARGET = REWRITE_OVERLAP_EXCELLENT_TARGET
@@ -1465,13 +1484,39 @@ def _is_protected_surface_term(term: str, protected_terms: list[str]) -> bool:
     return any(term == protected or term in protected or protected in term for protected in protected_terms)
 
 
+def _rename_ledger_pairs(rename_map: object) -> list[tuple[str, str]]:
+    """把"本书改名台账"(name_map+place_map+term_map 合并)整理成 (原名compact, 新名compact) 对,
+    作为换皮门的权威锚点源。"""
+    if not isinstance(rename_map, dict):
+        return []
+    pairs: list[tuple[str, str]] = []
+    for orig, new in rename_map.items():
+        oc = _compact_for_overlap(str(orig or ''))
+        nc = _compact_for_overlap(str(new or ''))
+        if len(oc) >= 2 and oc != nc:
+            pairs.append((oc, nc))
+    return pairs
+
+
 def _retained_surface_anchors(
     source: str,
     rewritten: str,
     protected_terms: object = None,
+    rename_ledger: object = None,
 ) -> list[str]:
-    source_terms = _candidate_surface_anchors(source)
     rewritten_compact = _compact_for_overlap(rewritten)
+    # 有"改名台账"时:只报台账里的**原名泄漏**(原名仍在原文且仍出现在成稿、且不是被新名包含),
+    # 这是有界、零误报(经线上6本验证 99.7%误报→0)、又能抓单个人名/地名/术语换皮失败的权威判据。
+    ledger = _rename_ledger_pairs(rename_ledger)
+    if ledger:
+        source_compact = _compact_for_overlap(source)
+        retained = [
+            oc for oc, nc in ledger
+            if oc in source_compact and oc in rewritten_compact and oc not in nc
+        ]
+        return _dedupe_nested_terms(retained)
+    # 无台账(老测试/standalone 无 analysis):回退原结构启发式
+    source_terms = _candidate_surface_anchors(source)
     protected = _normalize_protected_surface_terms(protected_terms)
     retained = [
         term
@@ -1489,13 +1534,21 @@ def _is_strong_surface_anchor(term: str) -> bool:
     return len(term or '') >= 2 and term[-1] in _STRONG_SURFACE_ANCHOR_SUFFIXES
 
 
-def _surface_anchor_issue(rewritten: str, source: str, protected_terms: object = None) -> str:
+def _surface_anchor_issue(rewritten: str, source: str, protected_terms: object = None,
+                          rename_ledger: object = None) -> str:
     source_len = len(_compact_for_overlap(source))
     if source_len < 120:
         return ''
-    retained = _retained_surface_anchors(source, rewritten, protected_terms)
+    retained = _retained_surface_anchors(source, rewritten, protected_terms, rename_ledger)
     if not retained:
         return ''
+    # 台账模式:retained 全是"对照表原名泄漏"(真换皮失败),直接报,不走启发式阈值。
+    if _rename_ledger_pairs(rename_ledger):
+        return (
+            '表层换皮不足：原文命名“'
+            + '、'.join(retained[:6])
+            + '”未按对照表替换(应全书统一改名)，需要替换命名、物件外观、场所细节和对白称呼'
+        )
     retained_names = [term for term in retained if _looks_like_name(term)]
     retained_strong = [term for term in retained if term not in retained_names and _is_strong_surface_anchor(term)]
     threshold = 4 if source_len < 500 else 7 if source_len < 1400 else 10
@@ -2044,7 +2097,7 @@ def _self_repetition_issue(text: str) -> str:
     return ''
 
 
-def score_rewrite_quality(rewritten: str, source: str, protected_terms: object = None, name_map: object = None) -> dict:
+def score_rewrite_quality(rewritten: str, source: str, protected_terms: object = None, name_map: object = None, rename_ledger: object = None) -> dict:
     """Score rewrite quality with copy-risk + structure-risk signals."""
     source_len = len((source or '').strip())
     rewritten_len = len((rewritten or '').strip())
@@ -2068,10 +2121,11 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
         }
 
     length_ratio = rewritten_len / source_len
-    overlap = _overlap_4gram(rewritten, source)
+    # 用"叙述-only overlap"做主判定:保留原文对白(自然童言/标志台词)不应被当成抄原文。
+    overlap = _narration_overlap_4gram(rewritten, source)
     opening_overlap = _overlap_4gram(
-        _compact_for_overlap(rewritten)[:260],
-        _compact_for_overlap(source)[:260],
+        _compact_for_overlap(_strip_dialogue(rewritten))[:260],
+        _compact_for_overlap(_strip_dialogue(source))[:260],
     )
     structure_similarity = _structure_similarity(rewritten, source)
     opening_beat_similarity = _opening_beat_similarity(rewritten, source)
@@ -2111,7 +2165,9 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
         issues.append(f'开头切入太像：前段重合 {opening_overlap:.0%}，需要换动作/物件/旁观反应开场')
         score -= 14
 
-    if structure_similarity > REWRITE_STRUCTURE_RETRY_THRESHOLD:
+    # 结构惩罚按"叙述重合"门控:无词汇重合(overlap 低)的"结构相似"在实践中不可证实
+    # (对白脚本同节奏的忠实改写会被误判 SS 高),真结构照搬必然 overlap 高,门控不放过真烂稿。
+    if structure_similarity > REWRITE_STRUCTURE_RETRY_THRESHOLD and overlap > REWRITE_OVERLAP_DELIVERABLE_TARGET:
         issues.append(
             f'结构相似：段落形状相似度 {structure_similarity:.0%}，建议压到 60% 以下；需要重排信息释放、事件顺序和段落长短'
         )
@@ -2178,7 +2234,7 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
         issues.append(repetition_issue)
         score -= 16
 
-    surface_issue = _surface_anchor_issue(rewritten, source, protected_terms)
+    surface_issue = _surface_anchor_issue(rewritten, source, protected_terms, rename_ledger)
     if surface_issue:
         issues.append(surface_issue)
         score -= 14
@@ -2249,8 +2305,13 @@ def _rewrite_quality_penalty(rewritten: str, source: str, protected_terms: objec
     length_penalty = max(0.0, 0.85 - length_ratio) + max(0.0, length_ratio - max_length_ratio)
     quality = score_rewrite_quality(rewritten, source, protected_terms=protected_terms)
     quality_penalty = (100 - quality['score']) / 100
-    structure_penalty = max(0.0, float(quality.get('structure_similarity') or 0) - REWRITE_STRUCTURE_TARGET)
-    return _overlap_4gram(rewritten, source) + length_penalty + quality_penalty + structure_penalty
+    narration_overlap = _narration_overlap_4gram(rewritten, source)
+    # 结构惩罚与评分口径一致:仅当叙述确有重合时才计,避免对白脚本忠实改写被结构相似顶掉好候选。
+    structure_penalty = (
+        max(0.0, float(quality.get('structure_similarity') or 0) - REWRITE_STRUCTURE_TARGET)
+        if narration_overlap > REWRITE_OVERLAP_DELIVERABLE_TARGET else 0.0
+    )
+    return narration_overlap + length_penalty + quality_penalty + structure_penalty
 
 
 def _length_penalty(rewritten: str, source: str) -> float:
@@ -3000,6 +3061,7 @@ def rewrite():
     analysis_block = '' if task == 'script' else format_for_rewrite_prompt(analysis_data)
     protected_terms = [] if task == 'script' else _analysis_protected_terms(analysis_data)
     name_map = {} if task == 'script' else _analysis_name_map(analysis_data)
+    rename_ledger = {} if task == 'script' else _analysis_replacement_map(analysis_data)
     if task == 'script':
         genre_hint = ''
     elif not genre_hint:
@@ -3022,6 +3084,8 @@ def rewrite():
             kwargs['protected_terms'] = protected_terms
         if name_map:
             kwargs['name_map'] = name_map
+        if rename_ledger:
+            kwargs['rename_ledger'] = rename_ledger
         if not kwargs:
             return score_rewrite_quality_base(rewritten, source)
         try:

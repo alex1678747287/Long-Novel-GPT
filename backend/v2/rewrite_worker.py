@@ -430,15 +430,18 @@ def _score_func_for_payload(payload: dict[str, Any]):
         payload.get("chapter_id"),
     )
     name_map = api._analysis_name_map(analysis_data)
+    rename_ledger = api._analysis_replacement_map(analysis_data)
 
     def score(rewritten: str, source: str) -> dict[str, Any]:
-        if not protected_terms and not name_map:
-            return api.score_rewrite_quality(rewritten, source)
         kwargs: dict[str, Any] = {}
         if protected_terms:
             kwargs["protected_terms"] = protected_terms
         if name_map:
             kwargs["name_map"] = name_map
+        if rename_ledger:
+            kwargs["rename_ledger"] = rename_ledger
+        if not kwargs:
+            return api.score_rewrite_quality(rewritten, source)
         return api.score_rewrite_quality(rewritten, source, **kwargs)
 
     return score

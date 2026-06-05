@@ -2595,15 +2595,23 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertTrue(any("连续表达" in item for item in score["issues"]))
 
     def test_quality_score_flags_structure_above_60_target(self):
-        with patch.object(api, "_overlap_4gram", return_value=0.04), \
+        # 结构相似惩罚现在按"叙述重合"门控:有词汇重合(overlap>22%)时,结构相似仍报。
+        with patch.object(api, "_overlap_4gram", return_value=0.30), \
              patch.object(api, "_structure_similarity", return_value=0.70), \
              patch.object(api, "_longest_common_substring_len", return_value=6):
             score = api.score_rewrite_quality("风火雷电山河湖海星月" * 80, "甲乙丙丁戊己庚辛壬癸" * 80)
 
         self.assertEqual(api.REWRITE_STRUCTURE_TARGET, 0.60)
         self.assertEqual(api.REWRITE_STRUCTURE_RETRY_THRESHOLD, 0.65)
-        self.assertEqual(score["delivery_label"], "需复查")
         self.assertTrue(any("60% 以下" in item for item in score["issues"]))
+
+    def test_quality_score_structure_penalty_gated_by_overlap(self):
+        # 无词汇重合(overlap 低)的"结构相似"不可证实(对白脚本忠实改写会被误判),不再扣分。
+        with patch.object(api, "_overlap_4gram", return_value=0.04), \
+             patch.object(api, "_structure_similarity", return_value=0.70), \
+             patch.object(api, "_longest_common_substring_len", return_value=6):
+            score = api.score_rewrite_quality("风火雷电山河湖海星月" * 80, "甲乙丙丁戊己庚辛壬癸" * 80)
+        self.assertFalse(any("结构相似" in item for item in score["issues"]))
 
     def test_quality_score_allows_short_common_name_or_setup_runs_when_other_metrics_pass(self):
         rewritten = ''.join(chr(0x4e00 + i) for i in range(1000))
@@ -2948,6 +2956,34 @@ class V2PromptWorkflowTest(unittest.TestCase):
         protected = api._analysis_protected_terms(analysis)
         for new in ("靖王府", "景澜国", "周家军"):
             self.assertIn(new, protected)
+
+    def test_overlap_excludes_preserved_dialogue_but_catches_copied_narration(self):
+        # 叙述全改 + 对白逐字保留 → 不判"表达重合过高"(对白本就该留)
+        src = ("".join(f"她沿着河岸往村口走了很远，心里翻来覆去想着那件事。“你到底回不回来？”他问。" for _ in range(8)))
+        good = ("".join(f"沿着堤坝她朝镇子方向慢慢挪，脑子里反复盘算那桩旧账。“你到底回不回来？”他问。" for _ in range(8)))
+        with patch.object(api, "_structure_similarity", return_value=0.2), \
+             patch.object(api, "_longest_common_substring_len", return_value=6):
+            sg = api.score_rewrite_quality(good, src)
+        self.assertFalse(any("表达重合过高" in i for i in sg["issues"]), "对白保留不应判表达重合过高")
+        # 叙述也逐字照抄(只改对白糊弄) → 叙述-only overlap 仍抓住
+        bad = ("".join(f"她沿着河岸往村口走了很远，心里翻来覆去想着那件事。“随便你。”他冷笑。" for _ in range(8)))
+        with patch.object(api, "_structure_similarity", return_value=0.2), \
+             patch.object(api, "_longest_common_substring_len", return_value=6):
+            sb = api.score_rewrite_quality(bad, src)
+        self.assertTrue(any("表达重合过高" in i for i in sb["issues"]), "叙述照抄必须仍被抓")
+
+    def test_surface_anchor_ledger_mode_flags_only_real_leaks(self):
+        # 有改名台账(rename_ledger)时:只报"台账原名泄漏",不再凭结构启发式误报通用词/题材词。
+        ledger = {"汝阳侯府": "临江侯府", "兰诺国": "沧澜国", "金枪鱼": "金枪鱼"}  # 同名项自动忽略
+        src = "她站在汝阳侯府门前，想起兰诺国的旧事，远处有人在钓金枪鱼。" * 8
+        # 成稿:地名已换、题材词金枪鱼保留(本就不该改) → 不报换皮不足
+        good = "她立在临江侯府阶下，忆起沧澜国往事，远处有人在钓金枪鱼。" * 8
+        self.assertEqual(api._surface_anchor_issue(good, src, rename_ledger=ledger), "")
+        # 成稿:汝阳侯府没换(原名泄漏) → 报
+        leak = "她立在汝阳侯府阶下，忆起沧澜国往事。" * 8
+        iss = api._surface_anchor_issue(leak, src, rename_ledger=ledger)
+        self.assertIn("汝阳侯府", iss)
+        self.assertIn("表层换皮不足", iss)
 
     def test_surface_anchor_precision_rejects_false_positive_categories(self):
         # R9 精度:动词短语/题材域词/通用词/量词碎片/核心剧情词 都不该被当成"换皮不足"锚点。
