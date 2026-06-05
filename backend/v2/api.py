@@ -1095,6 +1095,55 @@ def _dialogue_share_issue(rewritten: str, source: str) -> str:
     return ''
 
 
+def _dialogue_boost(rewritten: str, source: str, model_cfg: dict | None) -> str:
+    """对话化二次pass:对"对话太少"的成稿做一次**只干一件事**的聚焦改写——把叙述/回忆/铺垫
+    通过角色当众控诉/质问/内心独白改成对白(短剧标准手法),把对话占比拉到≥60%。聚焦单任务比
+    整章重写更易让模型照做。护栏:只在确实提升对话、不超长、不丢内容时采纳;任何异常返回 ''。"""
+    rw = (rewritten or '').strip()
+    if not model_cfg or len(_compact_for_overlap(rw)) < 300:
+        return ''
+    cur = _dialogue_ratio(rw)
+    if cur >= 0.58:
+        return ''
+    messages = [
+        {'role': 'system', 'content': (
+            '你是短剧编辑,只做一件事:把小说正文里的叙述改成对白,让对白占比≥60%。'
+            '只输出改写后的最终正文,放在一个 Markdown 三反引号代码块里,代码块外不要任何文字。'
+        )},
+        {'role': 'user', 'content': (
+            '下面这段洗稿对白太少、像叙述。请改写成**以对白为主(引号内对白字数占全文≥60%)**的短剧风格:\n'
+            '1) 身世/前情/恩怨/回忆 → 让角色**当众质问、控诉、嘲讽、回怼**地说出来;\n'
+            '2) 心理活动/判断 → 用**带引号的内心独白**带出(如:我心里冷笑，『这次轮到你求我。』);\n'
+            '3) 信息/设定交代 → 让原文已有的角色**一问一答**说出来,别用旁白;\n'
+            '4) 原文已是对白的保留;对白单独成段、分行清楚。\n'
+            '铁律:所有事件、人物、信息、情节**完全不变**,只改表达形式;**绝不新增原文没有的情节、'
+            '角色或事件**;成稿长度不得超过下文长度。\n'
+            '示例:叙述"上辈子我伺候瘫痪婆婆二十年,她死后他拿着早办好的离婚证把我赶出门"'
+            '→对白"「我伺候你瘫痪的妈整整二十年,端屎端尿。」我盯着他,'
+            '「她一咽气,你就掏出早办好的离婚证,把我扫地出门。」"\n\n'
+            f'【待改写洗稿】\n```\n{rw}\n```'
+        )},
+    ]
+    try:
+        raw = one_shot(model_cfg, messages, temperature=0.6)
+        boosted = _extract_final_rewritten(raw).strip()
+    except Exception:
+        return ''
+    if not boosted:
+        return ''
+    boosted_compact = len(_compact_for_overlap(boosted))
+    rw_compact = len(_compact_for_overlap(rw))
+    src_compact = max(1, len(_compact_for_overlap(source)))
+    # 护栏:对话确有提升 + 不借机扩写(≤原成稿1.05且≤原文上限) + 没丢大段内容(≥原成稿80%)
+    if _dialogue_ratio(boosted) <= cur + 0.05:
+        return ''
+    if boosted_compact > rw_compact * 1.05 or boosted_compact > src_compact * _max_rewrite_length_ratio(src_compact):
+        return ''
+    if boosted_compact < rw_compact * 0.8:
+        return ''
+    return boosted
+
+
 REWRITE_OVERLAP_EXCELLENT_TARGET = 0.15
 REWRITE_OVERLAP_DELIVERABLE_TARGET = 0.22
 REWRITE_OVERLAP_TARGET = REWRITE_OVERLAP_EXCELLENT_TARGET

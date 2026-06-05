@@ -2983,6 +2983,26 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertIn("dialogue_ratio", s)
         self.assertGreater(s["dialogue_ratio"], 0.3)
 
+    def test_dialogue_boost_accepts_higher_dialogue_keeps_guardrails(self):
+        rw = "他追问欠款的事，质问到底还不还。我盯着他说没钱。他冷笑着撂下狠话威胁。我转身离开。" * 8
+        model = {"model": "deepseek-v4-pro", "api_key": "x", "base_url": "http://y"}
+        boosted = "```\n" + ("“还不还钱？”他拍桌。“没有。”我答。“别逼我动手。”他冷笑。“随你。”我转身。" * 8) + "\n```"
+        with patch.object(api, "one_shot", return_value=boosted):
+            out = api._dialogue_boost(rw, rw, model)
+        self.assertTrue(out)
+        self.assertGreater(api._dialogue_ratio(out), api._dialogue_ratio(rw))
+        # 无模型→跳过;boost没提升对话→不采纳;借机扩写→不采纳
+        self.assertEqual(api._dialogue_boost(rw, rw, None), "")
+        with patch.object(api, "one_shot", return_value="```\n" + rw + "\n```"):
+            self.assertEqual(api._dialogue_boost(rw, rw, model), "")
+        with patch.object(api, "one_shot", return_value="```\n" + boosted.strip("`\n") * 3 + "\n```"):
+            self.assertEqual(api._dialogue_boost(rw, rw, model), "")  # 超长被护栏挡
+
+    def test_dialogue_boost_skips_already_dialogue_heavy(self):
+        heavy = "“一。”“二。”“三。”“四。”“五。”" * 20
+        model = {"model": "deepseek", "api_key": "x", "base_url": "y"}
+        self.assertEqual(api._dialogue_boost(heavy, heavy, model), "")  # 已≥58%,不必 boost
+
     def test_overlap_excludes_preserved_dialogue_but_catches_copied_narration(self):
         # 叙述全改 + 对白逐字保留 → 不判"表达重合过高"(对白本就该留)
         src = ("".join(f"她沿着河岸往村口走了很远，心里翻来覆去想着那件事。“你到底回不回来？”他问。" for _ in range(8)))

@@ -322,6 +322,38 @@ def _scene_fidelity_merged_quality(
     return merged
 
 
+def _dialogue_boosted(
+    payload: dict[str, Any],
+    rewritten: str,
+    source: str,
+    quality: dict[str, Any] | None,
+    score_func,
+) -> tuple[str, dict[str, Any] | None]:
+    """对"对话占比偏低"的候选做一次聚焦"对话化二次pass"(把叙述改成对白),让成品对白≥60%——
+    客户要成品、不能让人工补对话。整章重写时模型不肯把回忆/铺垫对话化,单任务聚焦改写更易照做。
+    特性开关 REWRITE_DIALOGUE_BOOST(默认关,单测/无网零副作用),线上 worker -e 开启。任何异常原样返回。"""
+    if os.environ.get("REWRITE_DIALOGUE_BOOST", "0") != "1":
+        return rewritten, quality
+    if not quality or not any('对话占比偏低' in str(item) for item in (quality.get('issues') or [])):
+        return rewritten, quality
+    try:
+        model_cfg = None
+        model_id = payload.get('model_id')
+        if model_id:
+            model_cfg = api.registry.get_model(model_id)
+        if model_cfg is None:
+            model_cfg = api.registry.get_active_model()
+        boosted = api._dialogue_boost(rewritten, source, model_cfg)
+    except Exception:
+        return rewritten, quality
+    if not boosted or boosted == rewritten:
+        return rewritten, quality
+    try:
+        return boosted, score_func(boosted, source)
+    except Exception:
+        return rewritten, quality
+
+
 def _quality_retry_failure_message(quality: dict[str, Any] | None) -> str:
     if not quality:
         return "质量复查未通过：缺少质量评分"
@@ -602,6 +634,8 @@ def _persist_direct_rewrite_result(
 
     if _job_is_canceled(job["id"]):
         raise RuntimeError("任务已取消")
+    # 对话不足的候选先做一次聚焦"对话化二次pass"(成品需对白≥60%,不让人工补)
+    rewritten, quality = _dialogue_boosted(payload, rewritten, source, quality, score_func)
     # 候选若将被接受(无需重试)或已到预算上限(将兜底落库)，先做一次忠实度审核抓换戏跑题。
     if (not _quality_requires_model_retry(quality)) or _job_over_budget(job, job_started, payload):
         quality = _scene_fidelity_merged_quality(payload, rewritten, source, quality)
@@ -804,6 +838,7 @@ def _run_segmented_job(
         final_quality = existing_quality
         kept_previous = True
 
+    merged, final_quality = _dialogue_boosted(payload, merged, source, final_quality, score_func)
     if (not _quality_requires_model_retry(final_quality)) or _job_over_budget(job, job_started, payload):
         final_quality = _scene_fidelity_merged_quality(payload, merged, source, final_quality)
     best_effort = False
