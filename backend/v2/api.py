@@ -208,28 +208,27 @@ user:
 3. 前 200 字要短、准、狠，少用形容词、比喻和长修饰链；如果原稿前段有可用对白，成稿第一句尽量直接上带引号对白，不要先写“沉闷空气、刺骨凉意、死一般寂静”式氛围铺垫。
 4. 背景信息拆散到后文，用 2-4 次短回补穿插在动作和对白之间；前 10 个自然段不能对应原文前 10 段。
 5. 不得逐句换词，不得按原段落一一平移；至少 40% 的背景、心理、旁支动作和证据揭示要换位置。
-6. 对白：问答顺序、语气、停顿、反击节奏可重排；自然口语和标志性/关键数字台词允许按原话保留。
+6. 对话占比是命门(对白占全文≥60%)：能说出口的转述、质问、解释、心理判断一律改成带引号直接对白；语气、反击节奏可重排，自然口语/标志/数字台词按原话保留；原文是对话的不许改成叙述。只把原文已有信息对话化，不凭空编情节、角色或对白。
 7. 不连续保留原文 8 字以上表达；不要出现像“换了名字的原文”的段落。
 8. 非核心细节必须替换：“捡垃圾死”“医院体检”“2号诊室”“6月12日办手续”等不能原样沿用；改成同功能新死法、新科室、新日期或新编号，但不改核心因果和人物关系。
 
 ═════════ 剧情感与视角 ═════════
 
 - 先识别原稿视角，默认保持原视角。第一人称原稿必须继续用“我”推进，不要改成姓名旁观或远距离第三人称。
-- 不能写成剧情简介或流水账。每个关键事件以可拍的画面和对白为主（动作、表情、物件、可见环境、对白），身体反应和内心只用一两句点缀。
+- 不能写成剧情简介或流水账。能用对白演的就用对白，画面只写"推动剧情的可拍动作/物件/冲突"，不堆环境氛围；身体反应和内心各一句封顶。
 - 每 300-500 字至少一次情绪推进：误会升级、关系反转、压迫逼近、证据落地、秘密松动、主角忍耐或爆发——靠动作和对白演出来，不靠一段心理描写。
 - 洗稿后仍要有原先的爽点、虐点、悬疑点、压迫感和反击欲。
-- 场景要可拍：多写门声、手势、眼神、物件位置、光线、气味、触感，少写抽象总结。
+- 别给快节奏戏加描写：原文靠对白推进的场景，洗稿也对白推进，不许把对白场景改成大段叙述/画面，只在转场或关键证据处补一笔可拍细节。
 - 内心活动分两块，别一刀切：① 无效回忆/自怜/抒情、拍不出又不推剧情的内心戏 → 删掉，或压成一个动作、一句台词；② 推动剧情的背景介绍（常以旁白或内心OS出现，交代设定/身份/利害/悬念）→ 保留核心意思，能改成对话或画面就改，转不动才用最精简的旁白/OS，绝不整段删没。
-- 对话优先：凡是能说出口的转述、质问、解释、心理判断，尽量改成带引号的直接对话；少用“他心想/他觉得/他明白”承载本可以变成台词的内容。
 - 只留画面和对话：尽量不写只能读、拍不出来的纯书面回忆和抽象议论；开头改编后携带的剧情背景信息量不要少于原文开头。
 - 避免 AI 套话：不要写“心中一暖/心头一震/嘴角勾起一抹/眼中(底)闪过一丝/眸光一闪/不动声色地/不禁/不由得”这类空泛套话，一律换成具体动作、表情或身体反应（攥拳、别开脸、喉结滚动、指节发白等）。
-- 短剧短快爽优先：这不是扩写比赛。删灌水废话、过度环境氛围描述、过度心理想象描述，把字数留给冲突、证据、动作和对白。
+- 短快爽是第一纪律，不是扩写比赛：删灌水废话、过度环境氛围、过度心理想象；画面只留推动剧情的，删冗后字数留给对白和冲突。
 - 第一屏要有强钩子开头，弱开头要以对话形式为主，优先用带引号的直接对白切入；不用对白时必须在80字内落证据物件、危险动作或硬冲突。原稿开头已强时只换说法和视角，不另起无关戏，不用氛围词堆满第一句。
 - 默认做个性化改编：保留核心设定和题材大类，雷同桥段改呈现方式、人物反应、证据出现方式和对白攻防，不靠随机跨世界观扩写。
 
 ═════════ 篇幅与合规 ═════════
 
-- 长度贴近原文：成稿控制在原文 85%-120%。**只做改写，不做扩写**——不得新增原文没有的情节、人物、桥段或对白，不得替原文续写后面的剧情；原文写到哪就改写到哪，到原文结尾就收住。压成梗概，或超过 120%（注水/续写/加戏）都算失败。
+- 长度红线：成稿控制在原文 85%-100%，默认不超原文（改编非扩写）。不得新增原文没有的情节/人物/桥段/对白，不得续写；超过原文长度多半是把对白改成了叙述或加了画面，必须删回来。
 - 开头可以比原稿更精简，后文用关键情节、对白交锋和动作反应承载字数，不靠形容词、环境铺陈和重复心理补字。
 - 深度降重优先靠换切入、换信息释放顺序、换段落形状、换对白推进，不靠扩写新设定或重复心理；同一剧情信息只写一次。
 - 同一短语、同一心理判断、同一压迫解释不能循环出现；如果一个意思已经通过动作或对白落地，后文不要换句话反复解释。
@@ -384,6 +383,8 @@ def _quality_retry_temperature_for(issues: list[str] | None = None) -> float:
         return 0.58
     if '开头钩子不足' in issue_text or '节奏拖沓' in issue_text:
         return 0.62
+    if '对话占比偏低' in issue_text:
+        return 0.7  # 把叙述改成对话是改写,略高温鼓励重组
     if '叙述骨架照搬' in issue_text:
         return 0.8  # 开场节拍重排是结构性创造，需比"结构相似"更高的探索温度才能跳出同一骨架
     if '结构相似' in issue_text or '开头切入太像' in issue_text:
@@ -890,11 +891,14 @@ def _source_summary_style_instruction(original_text: str) -> str:
 
 
 def _rewrite_length_bounds(source_len: int) -> tuple[float, float, float]:
+    # 改编非扩写:默认不超原文。实测洗稿超长(105-126%)几乎全是叙述注水
+    # (把对白场景改成大段画面/心理),对话占比不增反降。把 max 收到 ~原文长度,
+    # 逼模型把省下的字数留给对白(R1+R4),而不是堆描写。短章留一点格式化余量。
     if source_len < 500:
-        return 0.90, 1.08, 1.25
+        return 0.88, 1.00, 1.10
     if source_len < 1800:
-        return 0.90, 1.03, 1.18
-    return 0.90, 1.05, 1.30
+        return 0.88, 0.98, 1.08
+    return 0.88, 1.00, 1.12
 
 
 def _length_constraint_instruction(original_text: str) -> str:
@@ -1053,6 +1057,38 @@ def _narration_overlap_4gram(rewritten: str, source: str) -> float:
     if len(src_narr) < 80 or len(rw_narr) < 80:
         return _overlap_4gram(rewritten, source)
     return _overlap_4gram(_strip_dialogue(rewritten), _strip_dialogue(source))
+
+
+def _dialogue_ratio(text: str) -> float:
+    """引号内对白字数 / 全文字数。短剧要求对话篇幅 ≥60-70%。"""
+    compact = _compact_for_overlap(text)
+    if not compact:
+        return 0.0
+    dchars = sum(len(_compact_for_overlap(m.group(0))) for m in _DIALOGUE_RE.finditer(text or ''))
+    return dchars / len(compact)
+
+
+def _dialogue_share_issue(rewritten: str, source: str) -> str:
+    """对话占比门(客户R2):短剧"能对话就对话",对话篇幅应 ≥60-70%。
+    用**相对源稿**判定而非纯绝对——纯绝对会误伤本就少对白的题材(打斗/探险/古风叙事),
+    逼模型凭空造对话(违背"个性化改编非创作")。只抓两种:①高对白源稿被洗低 ②对话被改成叙述。"""
+    src_compact = _compact_for_overlap(source)
+    if len(src_compact) < 400:
+        return ''  # 短章统计噪声大,跳过
+    src_r = _dialogue_ratio(source)
+    rw_r = _dialogue_ratio(rewritten)
+    if src_r > 0.35 and rw_r < max(0.55, src_r * 0.85):
+        return (
+            f'对话占比偏低：洗稿对白占比 {rw_r:.0%}（原稿 {src_r:.0%}），短剧需 ≥60%；'
+            '把能说出口的转述、质问、解释、心理判断改成带引号直接对白，'
+            '只把原文已有的事件/人物/台词对话化，不新增情节、角色或对白'
+        )
+    if rw_r < src_r - 0.08 and src_r > 0.20:
+        return (
+            f'对话占比偏低：洗稿把原稿对白改成了叙述（{src_r:.0%}→{rw_r:.0%}），'
+            '把可对话内容改回带引号直接对白，只对话化原文已有信息，不新增情节'
+        )
+    return ''
 
 
 REWRITE_OVERLAP_EXCELLENT_TARGET = 0.15
@@ -1984,7 +2020,9 @@ def _opening_hook_issue(text: str) -> str:
     first_direct_dialogue = _first_marker_index(opening, _HOOK_DIRECT_DIALOGUE_MARKERS)
     first_conflict = _first_marker_index(opening, _HOOK_CONFLICT_MARKERS)
     first_action = _first_marker_index(opening, _HOOK_ACTION_MARKERS)
-    if first_direct_dialogue != -1 and first_direct_dialogue <= 180:
+    # 客户R3"对话形式为主":直接对白要在前80字内出现才算对话式强钩子开头(原180太松,
+    # 会放过"先一整段叙述、对白埋到中段"的弱开头)。
+    if first_direct_dialogue != -1 and first_direct_dialogue <= 80:
         return ''
     hard_conflict_hook = (
         conflict_count >= 1
@@ -2136,9 +2174,9 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
     score = 100
     issues: list[str] = []
     max_length_ratio = _max_rewrite_length_ratio(source_len)
-    # 严重超标红线收紧并按档相对 max：短/中章(实测最易注水)≈1.22 即强制重试压回篇幅，
-    # 长章保留略宽的容忍(对齐"长章可稍长"的既有策略)。客户精修通常更紧，>红线多半在加戏。
-    severe_over_ratio = max(1.22, max_length_ratio + 0.04)
+    # 严重超标红线随 max 收紧(改编非扩写,默认不超原文):短/中章 >~1.12 即强制重试压回篇幅，
+    # 长章保留略宽的容忍(对齐"长章可稍长"的既有策略)。客户精修通常更紧，>红线多半在加戏/把对白改成叙述。
+    severe_over_ratio = max(1.12, max_length_ratio + 0.04)
     if length_ratio < 0.80:
         issues.append(f'篇幅过短：输出只有原文 {length_ratio:.0%}，像摘要而不是洗稿')
         score -= 12
@@ -2224,6 +2262,11 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
         issues.append(pacing_issue)
         score -= 4
 
+    dialogue_issue = _dialogue_share_issue(rewritten, source)
+    if dialogue_issue:
+        issues.append(dialogue_issue)
+        score -= 8
+
     cliche_issue = _ai_cliche_issue(rewritten)
     if cliche_issue:
         issues.append(cliche_issue)
@@ -2279,6 +2322,7 @@ def score_rewrite_quality(rewritten: str, source: str, protected_terms: object =
         'source_pov': source_pov,
         'rewritten_pov': rewritten_pov,
         'length_ratio': round(length_ratio, 4),
+        'dialogue_ratio': round(_dialogue_ratio(rewritten), 4),
         'overlap4': round(overlap, 4),
         'opening_overlap': round(opening_overlap, 4),
         'structure_similarity': round(structure_similarity, 4),
@@ -2477,9 +2521,10 @@ def _quality_retry_instruction(
             )
         else:
             length_focus = (
-                '上一版偏长：这次不是重新扩写，必须优先压回原文长度。删掉新增支线、重复解释、'
-                '无关背景、过量身体反应、前世细节补写和注水铺陈；每段合并多个信息，'
-                '把同一信息压成动作、证据或对白，不要把每个剧情点单独扩成新段。'
+                '上一版偏长：超长几乎全是叙述注水——你把原文的对白场景改成了大段画面/动作/心理描写。'
+                '这次必须压回原文长度且不超原文：原文用对白演的就照样用对白演，不许把对白改写成叙述；'
+                '删掉新增支线、重复解释、无关背景、过度环境氛围、过度心理想象和前世细节补写；'
+                '画面只留推动剧情的可拍动作/证据，每段合并多个信息，把同一信息压成动作、证据或对白。'
             )
     else:
         min_len = int(source_len * 0.90)
@@ -2521,6 +2566,14 @@ def _quality_retry_instruction(
             '只能换皮（改人名/地名/物件名/措辞、调整叙述顺序、删减次要细节），'
             '**绝不允许新增原文没有的情节、场景、人物或对白，绝不允许把这场戏替换成另一场戏或另一个人的视角**。'
             '钩子也只能取自本章原文已有内容。写到原文这场戏的结尾就收。'
+        )
+    if '对话占比偏低' in issue_text:
+        surface_line += (
+            '\n对话化修正（最高优先）：上一版对话太少/把原稿对白改成了叙述。短剧靠对白推进——'
+            '把能说出口的转述、质问、解释、心理判断、信息交代统统改成带引号直接对白，'
+            '让全章对白篇幅占到 ≥60%；原文本就是对白的地方必须保留为对白、不许改成叙述。'
+            '但只把原文 y 已有的事件、人物、台词对话化（转述→对话的等量换形），'
+            '**绝不新增原文没有的情节、角色或对白**，也不许为凑对话拉长篇幅。'
         )
     opening_line = ''
     if '开头过度精修' in issue_text:
@@ -2613,6 +2666,9 @@ def _quality_retry_strategy(attempt: int, issues: list[str] | None = None) -> st
     if '跑题换戏' in issue_text:
         return ('严格忠实改写原文这场戏:同样的事件、人物、动作走向和因果，逐一对应原文已有内容，'
                 '只换皮(名字/物件/措辞/顺序)，绝不新增或替换原文没有的情节、场景、人物。')
+    if '对话占比偏低' in issue_text:
+        return ('把叙述/转述/心理判断改成带引号直接对白,对白篇幅拉到≥60%,原文是对白的保持对白;'
+                '只对话化原文已有信息,不新增情节/角色/对白,不为凑对话拉长篇幅。')
     if '叙述骨架照搬' in issue_text:
         beat_starts = [
             '从死亡/结局的余波切入（先写结果落在人物身上的那一瞬），再倒回证据与前因；'
@@ -2762,6 +2818,7 @@ def _has_serious_rewrite_issue(issues: list[str] | None = None) -> bool:
         '流水账风险',
         '开头钩子不足',
         '跑题换戏',
+        '对话占比偏低',
     )
     return any(marker in issue_text for marker in serious_markers)
 
@@ -2809,6 +2866,7 @@ def _has_customer_delivery_risk(issues: list[str] | None) -> bool:
         '严重超标',
         '开头钩子不足',
         '跑题换戏',
+        '对话占比偏低',
     )
     return any(any(marker in item for marker in risk_markers) for item in (issues or []))
 

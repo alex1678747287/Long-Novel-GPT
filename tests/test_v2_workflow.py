@@ -102,11 +102,12 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertGreaterEqual(adjusted["max_tokens"], 6144)
 
     def test_mid_chapter_length_bounds_prioritize_compact_delivery(self):
+        # 改编非扩写:默认不超原文,max 收到 ~原文长度,逼模型把省下的字给对白(R1+R4)
         min_ratio, target_ratio, max_ratio = api._rewrite_length_bounds(1598)
 
-        self.assertEqual(min_ratio, 0.90)
-        self.assertEqual(target_ratio, 1.03)
-        self.assertEqual(max_ratio, 1.18)
+        self.assertEqual(min_ratio, 0.88)
+        self.assertEqual(target_ratio, 0.98)
+        self.assertEqual(max_ratio, 1.08)
 
     def test_script_generation_budget_allows_scene_format_expansion(self):
         model = {
@@ -170,7 +171,7 @@ class V2PromptWorkflowTest(unittest.TestCase):
             "合规降噪",
             "微而不弱、短而不浅",
             "不得逐句换词",
-            "85%-120%",
+            "85%-100%",
             "压成梗概",
             "前 10 个自然段",
             "不连续保留原文 8 字以上表达",
@@ -187,7 +188,7 @@ class V2PromptWorkflowTest(unittest.TestCase):
             "每 300–500 字至少出现一次情绪推进",
             "前 200 字",
             "少用形容词",
-            "短剧短快爽",
+            "短快爽是第一纪律",
             "不是扩写比赛",
             "对话形式为主",
             "强钩子开头",
@@ -321,8 +322,8 @@ class V2PromptWorkflowTest(unittest.TestCase):
 
         self.assertIn("【篇幅约束】", content)
         self.assertIn(f"原文约 {len(source)} 字", content)
-        self.assertIn(f"{int(len(source) * 0.90)}-{int(len(source) * 1.25)} 字", content)
-        self.assertIn(f"约 {int(len(source) * 1.08)} 字", content)
+        self.assertIn(f"{int(len(source) * 0.88)}-{int(len(source) * 1.10)} 字", content)
+        self.assertIn(f"约 {int(len(source) * 1.00)} 字", content)
         self.assertIn("压成梗概、或超过上限", content)
 
     def test_rewrite_messages_name_source_surface_anchors_to_replace(self):
@@ -763,7 +764,7 @@ class V2PromptWorkflowTest(unittest.TestCase):
             "代码块内只放最终洗稿正文",
             "代码块外不要输出任何文字",
             "背景信息拆散到后文",
-            "成稿控制在原文 85%-120%",
+            "成稿控制在原文 85%-100%",
             "前 200 字",
             "少用形容词",
         ]:
@@ -1455,9 +1456,9 @@ class V2PromptWorkflowTest(unittest.TestCase):
         )
 
         self.assertIn("绝对不要超过 1645 字", instruction)
-        self.assertIn("不是重新扩写", instruction)
+        self.assertIn("不许把对白改写成叙述", instruction)
         self.assertIn("每段合并多个信息", instruction)
-        self.assertIn("优先压回原文长度", instruction)
+        self.assertIn("压回原文长度", instruction)
 
     def test_surface_retry_instruction_replaces_fixed_phrase_residue(self):
         instruction = api._quality_retry_instruction(
@@ -1819,7 +1820,7 @@ class V2PromptWorkflowTest(unittest.TestCase):
         app.register_blueprint(api.v2_bp)
         source = "林轩醒来后发现自己在木屋，手腕有绳索勒痕，门外有人端药进来。" * 16
         first_bad = "林轩醒来后发现自己在木屋，手腕有绳索勒痕，门外有人端药进来。" * 16
-        still_review = "蝉声钻进耳朵。林轩睁开眼，木桌和破窗慢慢清晰。" * 26
+        still_review = "蝉声钻进耳朵。林轩睁开眼，木桌和破窗慢慢清晰。" * 21  # ~101%:贴近原文,改编非扩写收紧后仍是更优候选
         calls = []
 
         def fake_stream_chat(model, messages, temperature=None):
@@ -1881,7 +1882,7 @@ class V2PromptWorkflowTest(unittest.TestCase):
         app.register_blueprint(api.v2_bp)
         source = "林轩醒来后发现自己在木屋，手腕有绳索勒痕，门外有人端药进来。" * 16
         first_bad = "林轩醒来后发现自己在木屋，手腕有绳索勒痕，门外有人端药进来。" * 16
-        still_review = "蝉声钻进耳朵。林轩睁开眼，木桌和破窗慢慢清晰。" * 26
+        still_review = "蝉声钻进耳朵。林轩睁开眼，木桌和破窗慢慢清晰。" * 21  # ~101%:贴近原文,改编非扩写收紧后仍是更优候选
         final_good = "药碗磕在矮凳上时，林轩先看见自己腕上的青紫。他没有问疼，只盯着门外那道影子。" * 16
         calls = []
 
@@ -2734,7 +2735,7 @@ class V2PromptWorkflowTest(unittest.TestCase):
             "蝉声从破窗钻进来，林轩睁开眼，先看见山涧木屋里的旧方桌。"
             "手腕上的绳索勒痕还在，苏婉儿把青瓷药壶放下，推来黑色汤药。"
             "他按住羊脂玉佩，想起林家家宴那杯酒，终于明白有人要他死。"
-        ) * 6
+        ) * 5  # ~103%:贴近原文,不触发收紧后的超长红线,只验证表层换皮检测
 
         with patch.object(api, "_overlap_4gram", return_value=0.04), \
              patch.object(api, "_structure_similarity", return_value=0.22), \
@@ -2956,6 +2957,31 @@ class V2PromptWorkflowTest(unittest.TestCase):
         protected = api._analysis_protected_terms(analysis)
         for new in ("靖王府", "景澜国", "周家军"):
             self.assertIn(new, protected)
+
+    def test_dialogue_share_issue_flags_dialogue_to_narration(self):
+        # 客户R2:原稿高对白被洗成叙述 → 报"对话占比偏低"
+        src = ("“你到底还不还钱？”他拍了桌子。"
+               "“没钱。”我盯着他。"
+               "“那就别怪我不客气。”他冷笑。"
+               "“随你。”我转身要走。") * 8
+        narrated = ("他拍着桌子追问欠款的事，质问到底还不还。"
+                    "我盯着他说没有钱。他冷笑着撂下狠话威胁我。"
+                    "我转身说随便他，准备离开这个地方。") * 8
+        self.assertIn("对话占比偏低", api._dialogue_share_issue(narrated, src))
+
+    def test_dialogue_share_issue_skips_low_dialogue_source(self):
+        # 本就少对白的源稿(打斗/叙事) → 不报(否则逼模型造假对话)
+        src = ("他翻过山脊，雪没到膝盖，风像刀子割脸，远处狼嚎一声接一声。") * 12
+        rw = ("他越过山梁，积雪埋住小腿，寒风刮得脸生疼，狼群的嚎叫此起彼伏。") * 12
+        self.assertEqual(api._dialogue_share_issue(rw, src), "")
+
+    def test_dialogue_share_issue_skips_short_chapter(self):
+        self.assertEqual(api._dialogue_share_issue("“喂。”他说。", "“喂。”他说。"), "")
+
+    def test_score_includes_dialogue_ratio_field(self):
+        s = api.score_rewrite_quality("“你好。”他说。" * 5, "“在吗。”她问。" * 5)
+        self.assertIn("dialogue_ratio", s)
+        self.assertGreater(s["dialogue_ratio"], 0.3)
 
     def test_overlap_excludes_preserved_dialogue_but_catches_copied_narration(self):
         # 叙述全改 + 对白逐字保留 → 不判"表达重合过高"(对白本就该留)
@@ -3243,17 +3269,28 @@ class V2PromptWorkflowTest(unittest.TestCase):
         self.assertGreater(score["length_ratio"], 1.25)
         self.assertTrue(any("篇幅过长" in item for item in score["issues"]))
 
-    def test_quality_score_allows_slightly_longer_long_chapters(self):
+    def test_long_chapter_near_original_length_is_clean(self):
+        # 改编非扩写:长章贴近原文(~105%)不报超长;真超长(>112%)才告警
         source = "甲乙丙丁戊己庚辛壬癸" * 220
-        rewritten = "风火雷电山河湖海星月" * 286
+        rewritten = "风火雷电山河湖海星月" * 231  # ~105%
 
         with patch.object(api, "_overlap_4gram", return_value=0.04), \
              patch.object(api, "_structure_similarity", return_value=0.22), \
              patch.object(api, "_longest_common_substring_len", return_value=8):
             score = api.score_rewrite_quality(rewritten, source)
 
-        self.assertLessEqual(score["length_ratio"], 1.30)
+        self.assertLessEqual(score["length_ratio"], 1.08)
         self.assertFalse(any("篇幅过长" in item for item in score["issues"]))
+
+    def test_quality_score_flags_long_chapter_above_tightened_cap(self):
+        # 收紧后:长章 ~130% 不再"略宽容忍",必须报超长(改编非扩写默认不超原文)
+        source = "甲乙丙丁戊己庚辛壬癸" * 220
+        rewritten = "风火雷电山河湖海星月" * 286  # ~130%
+
+        score = api.score_rewrite_quality(rewritten, source)
+
+        self.assertGreater(score["length_ratio"], 1.12)
+        self.assertTrue(any("篇幅过长" in item for item in score["issues"]))
 
     def test_quality_score_tightened_severe_overlength_for_mid_chapter(self):
         # R7：中章 ~124% 现在算严重超标(强制重试)，不再只是 -6 告警
